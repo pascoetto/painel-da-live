@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Painel da Live · Overlay</title>
+<link rel="icon" type="image/png" href="/icone.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=TikTok+Sans:wght@500..900&display=swap" rel="stylesheet">
+<!--
+  Overlays para OBS / TikTok LIVE Studio (fonte "Navegador" / "Link"), fundo transparente.
+  Endereço:  /overlay/<tipo>?estilo=painel|limpo&top=10&escala=1&titulo=1
+  Tipos:     curtidas · presentes · compartilhamentos · metas · batalha · alertas
+  metas:     &quais=todas|curtidas|seguidores|diamantes|tiktok
+  alertas:   &tipos=seguir,compartilhar,heart,presente,metas,batalha&duracao=5
+-->
+<style>
+  :root{--rosa:#fe2c55;--ciano:#25f4ee;--ouro:#ffc83d;--roxo:#8a5cf6;--ok:#3ddc84;
+        --card:rgba(18,18,26,.86);--linha:rgba(255,255,255,.12);--ink:#fff;--muted:rgba(255,255,255,.72)}
+  html{font-size:calc(16px * var(--escala, 1))}
+  html,body{margin:0;background:transparent;overflow:hidden}
+  body{font-family:"TikTok Sans",Inter,"Segoe UI",Arial,sans-serif;color:var(--ink);padding:.75rem}
+  *{box-sizing:border-box}
+  .some{display:none!important}
+
+  /* ---------- estilo PAINEL (cartão escuro, rosa e ciano) ---------- */
+  .painel .caixa{background:var(--card);border:2px solid rgba(254,44,85,.55);border-radius:1.25rem;padding:.9rem 1rem 1rem;
+    box-shadow:0 .5rem 1.6rem rgba(0,0,0,.35);backdrop-filter:blur(6px);width:23rem}
+  .painel .tit{font-weight:900;font-size:1.15rem;margin:0 0 .6rem;display:flex;align-items:center;gap:.45rem;letter-spacing:.02em}
+  .painel .tit small{margin-left:auto;font-size:.85rem;color:var(--muted);font-weight:700}
+  .painel .lin{display:grid;grid-template-columns:1.9rem 2.3rem 1fr auto;align-items:center;gap:.55rem;padding:.38rem .2rem;
+    border-bottom:1px solid var(--linha);transition:background .4s}
+  .painel .lin:last-child{border-bottom:0}
+  .painel .pos{width:1.8rem;height:1.8rem;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.95rem;
+    background:rgba(255,255,255,.1)}
+  .painel .lin:nth-child(1) .pos{background:linear-gradient(#ffe27a,#f5a300);color:#3a2600}
+  .painel .lin:nth-child(2) .pos{background:linear-gradient(#f2f2f2,#b9b9c4);color:#222}
+  .painel .lin:nth-child(3) .pos{background:linear-gradient(#f0b27a,#c06a2b);color:#2b1300}
+  .painel .av{width:2.3rem;height:2.3rem;border-radius:50%;object-fit:cover;background:linear-gradient(135deg,var(--ciano),var(--rosa));
+    display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1rem;border:2px solid rgba(255,255,255,.35)}
+  .painel .nome{font-weight:800;font-size:1.02rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .painel .val{font-weight:900;font-size:1.05rem;font-variant-numeric:tabular-nums}
+  .painel .vazio{color:var(--muted);font-size:.95rem;padding:.4rem .2rem}
+
+  /* ---------- estilo LIMPO (só texto com sombra, direto sobre o vídeo) ---------- */
+  .limpo .caixa{width:23rem}
+  .limpo, .limpo *{text-shadow:0 0 .25rem #000,0 .1rem .35rem rgba(0,0,0,.9),0 0 .1rem #000}
+  .limpo .tit{font-weight:900;font-size:1.2rem;margin:0 0 .4rem;display:flex;gap:.45rem;align-items:center;letter-spacing:.03em;text-transform:uppercase}
+  .limpo .tit small{margin-left:auto;font-size:.85rem;opacity:.9}
+  .limpo .lin{display:grid;grid-template-columns:1.6rem 2rem 1fr auto;align-items:center;gap:.5rem;padding:.22rem 0}
+  .limpo .pos{font-weight:900;font-size:1.05rem;text-align:center}
+  .limpo .lin:nth-child(1) .pos{color:#ffd54a} .limpo .lin:nth-child(2) .pos{color:#e6e6ee} .limpo .lin:nth-child(3) .pos{color:#f0a868}
+  .limpo .av{width:2rem;height:2rem;border-radius:50%;object-fit:cover;border:2px solid #fff;box-shadow:0 0 .3rem rgba(0,0,0,.8);
+    background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.9rem}
+  .limpo .nome{font-weight:800;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .limpo .val{font-weight:900;font-size:1.1rem;font-variant-numeric:tabular-nums}
+  .limpo .vazio{opacity:.85;font-size:.95rem}
+
+  .lin.subiu{animation:subiu 1.1s ease-out}
+  @keyframes subiu{0%{background:rgba(254,44,85,.45)}100%{background:transparent}}
+  .val .ic{font-size:.85em;margin-left:.15rem}
+
+  /* ---------- metas ---------- */
+  .metas{display:flex;flex-direction:column;gap:.6rem;width:23rem}
+  .meta .topo{display:flex;justify-content:space-between;gap:.5rem;font-weight:900;font-size:1rem;margin-bottom:.35rem}
+  .meta .topo small{font-weight:700;color:var(--muted);white-space:nowrap}
+  .trilho{height:.8rem;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden;border:1px solid rgba(255,255,255,.18)}
+  .enche{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--ciano),var(--rosa));transition:width .8s}
+  .meta.seguidores .enche{background:linear-gradient(90deg,#7afcf8,var(--ciano))}
+  .meta.diamantes .enche{background:linear-gradient(90deg,var(--ciano),var(--roxo))}
+  .meta.tiktok .enche{background:linear-gradient(90deg,#ffe27a,#f5a300)}
+  .meta.ok .enche{background:var(--ok)}
+  .painel .meta{background:var(--card);border:2px solid rgba(254,44,85,.45);border-radius:1rem;padding:.7rem .9rem .8rem}
+  .painel .meta.seguidores{border-color:rgba(37,244,238,.5)} .painel .meta.diamantes{border-color:rgba(138,92,246,.6)} .painel .meta.tiktok{border-color:rgba(255,200,61,.6)}
+  .limpo .trilho{box-shadow:0 0 .4rem rgba(0,0,0,.7)}
+  .mtk{display:grid;grid-template-columns:1.5rem 1fr auto;gap:.15rem .5rem;align-items:center;font-size:.92rem;margin-top:.35rem}
+  .mtk img{width:1.4rem;height:1.4rem;object-fit:contain} .mtk .trilho{grid-column:2 / 4;height:.55rem}
+  .mtk b{font-variant-numeric:tabular-nums}
+
+  /* ---------- batalha ---------- */
+  .batalha{width:30rem}
+  .painel .batalha{background:var(--card);border:2px solid rgba(254,44,85,.6);border-radius:1.25rem;padding:.8rem 1rem .9rem;box-shadow:0 .5rem 1.6rem rgba(0,0,0,.35)}
+  .bt-topo{display:flex;justify-content:center;align-items:center;gap:.7rem;margin-bottom:.4rem;flex-wrap:wrap}
+  .bt-rot{font-weight:900;letter-spacing:.1em;font-size:.9rem;opacity:.85}
+  .bt-tempo{font-weight:900;font-size:1.7rem;font-variant-numeric:tabular-nums}
+  .bt-tempo.fim30{color:var(--rosa);animation:pisca 1s infinite} @keyframes pisca{50%{opacity:.4}}
+  .bt-res{font-weight:900;font-size:1.6rem} .bt-res.vitoria{color:var(--ok)} .bt-res.empate{color:var(--ciano)}
+  .bt-missao{background:var(--ouro);color:#2a1d00;text-shadow:none!important;font-weight:900;font-size:.8rem;border-radius:99px;padding:.15rem .6rem}
+  .bt-lados{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:.6rem}
+  .bt-lado{display:flex;flex-direction:column;min-width:0} .bt-lado.eles{text-align:right}
+  .bt-nome{font-weight:800;font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bt-pts{font-weight:900;font-size:2.3rem;line-height:1;font-variant-numeric:tabular-nums}
+  .bt-lado.nos .bt-pts{color:var(--rosa)} .bt-lado.eles .bt-pts{color:var(--ciano)}
+  .bt-cabo{display:flex;height:.8rem;border-radius:99px;overflow:hidden;margin:.55rem 0 .35rem;background:rgba(255,255,255,.15)}
+  .bt-cabo .a{background:var(--rosa);transition:width .6s} .bt-cabo .b{background:var(--ciano);flex:1}
+  .bt-time{font-size:.85rem;color:var(--muted)} .bt-time b{color:var(--ink)}
+
+  /* ---------- alertas animados ---------- */
+  .alertas{position:relative;width:28rem;min-height:6rem}
+  .alerta{display:flex;align-items:center;gap:.8rem;padding:.8rem 1.1rem;border-radius:1.2rem;animation:entra .55s cubic-bezier(.2,1.4,.4,1) both}
+  .alerta.sai{animation:sai .45s ease-in both}
+  .painel .alerta{background:var(--card);border:2px solid var(--rosa);box-shadow:0 .6rem 1.8rem rgba(254,44,85,.35)}
+  .alerta .emo{font-size:2.6rem;line-height:1;animation:pula 1s ease-in-out infinite}
+  .alerta .txt{display:flex;flex-direction:column;min-width:0}
+  .alerta .quem{font-weight:900;font-size:1.35rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .alerta .oque{font-weight:700;font-size:1.05rem;color:var(--muted)}
+  .alerta .av{width:3.2rem;height:3.2rem;border-radius:50%;object-fit:cover;border:3px solid var(--ciano);flex:none}
+  .alerta.t-presente{border-color:var(--ouro)} .alerta.t-heart{border-color:#ff7aa2} .alerta.t-compartilhar{border-color:var(--ciano)}
+  .alerta.t-meta, .alerta.t-batalha{border-color:var(--ouro)}
+  @keyframes entra{0%{opacity:0;transform:translateY(1.2rem) scale(.85)}100%{opacity:1;transform:none}}
+  @keyframes sai{to{opacity:0;transform:translateY(-.8rem) scale(.95)}}
+  @keyframes pula{50%{transform:translateY(-.25rem) rotate(-6deg)}}
+</style>
+</head>
+<body>
+<div id="raiz"></div>
+<script>
+const P = new URLSearchParams(location.search);
+const TIPO = (P.get("tipo") || location.pathname.split("/")[2] || "curtidas").toLowerCase();
+// Aberta pelo GitHub Pages (https, para o TikTok LIVE Studio): busca os dados no painel aberto neste computador.
+const API = location.protocol === "https:" || P.get("porta") ? `http://127.0.0.1:${Number(P.get("porta")) || 8765}` : "";
+let conseguiu = false, falhas = 0;
+const ESTILO = (P.get("estilo") || "painel").toLowerCase() === "limpo" ? "limpo" : "painel";
+const TOP = Math.max(1, Math.min(10, Number(P.get("top")) || 10));
+const TITULO = P.get("titulo") !== "0";
+document.documentElement.style.setProperty("--escala", Math.max(.4, Math.min(3, Number(P.get("escala")) || 1)));
+document.body.className = ESTILO;
+const raiz = document.getElementById("raiz");
+const num = n => Number(n || 0).toLocaleString("pt-BR");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const avatar = p => p.foto ? `<img class="av" src="${esc(p.foto)}" referrerpolicy="no-referrer" onerror="this.outerHTML='<span class=&quot;av&quot;>${esc((p.nome || "?")[0].toUpperCase())}</span>'">`
+                           : `<span class="av">${esc((p.nome || "?")[0].toUpperCase())}</span>`;
+
+// ---------------- Top 10 ----------------
+const TOPS = {
+  curtidas: {tit: "❤️ Top curtidas", lista: d => d.top_curtidas, val: p => p.total, ic: "❤️", total: d => num(d.total_curtidas)},
+  presentes: {tit: "🎁 Top presentes", lista: d => d.top_presentes, val: p => p.diamantes, ic: "💎", total: d => num(d.total_diamantes) + " 💎"},
+  compartilhamentos: {tit: "🔁 Top compartilhamentos", lista: d => d.top_compart, val: p => p.total, ic: "🔁", total: d => num(d.total_compart)},
+};
+const anteriores = {};
+function desenharTop(d) {
+  const t = TOPS[TIPO], lista = (t.lista(d) || []).slice(0, TOP);
+  raiz.innerHTML = `<div class="caixa">${TITULO ? `<div class="tit">${t.tit.replace("Top", "Top " + TOP)}<small>${t.total(d)}</small></div>` : ""}
+    <div>${lista.length ? lista.map((p, i) => {
+      const v = t.val(p), subiu = anteriores[p.handle] !== undefined && v > anteriores[p.handle];
+      return `<div class="lin ${subiu ? "subiu" : ""}"><span class="pos">${i + 1}</span>${avatar(p)}<span class="nome">${esc(p.nome)}</span>
+        <span class="val">${num(v)}<span class="ic">${t.ic}</span></span></div>`;
+    }).join("") : `<div class="vazio">Ainda ninguém por aqui… seja o primeiro! ✨</div>`}</div></div>`;
+  lista.forEach(p => anteriores[p.handle] = t.val(p));
+}
+
+// ---------------- Metas ----------------
+const QUAIS = (P.get("quais") || "todas").toLowerCase();
+const INFO_META = {curtidas: ["❤️", "curtidas", d => d.total_curtidas], seguidores: ["👥", "seguidores", d => d.seguidores_total],
+                   diamantes: ["💎", "diamantes", d => d.total_diamantes]};
+function blocoMeta(tipo, metas, d) {
+  const [emo, nome, tot] = INFO_META[tipo], total = tot(d);
+  if (!metas.length || total == null) return "";
+  const prox = metas.find(m => !m.batida && m.valor > total);
+  const alvo = prox ? prox.valor : metas[metas.length - 1].valor;
+  const anterior = metas.filter(m => m.valor <= total).map(m => m.valor).pop() || 0;
+  const pct = prox ? Math.max(0, Math.min(100, (total - anterior) / Math.max(1, alvo - anterior) * 100)) : 100;
+  return `<div class="meta ${tipo} ${prox ? "" : "ok"}"><div class="topo"><span>${emo} ${prox ? `Meta: ${num(alvo)} ${nome}` : `Todas as metas batidas! 🎉`}</span>
+    <small>${num(total)}${prox ? ` · faltam ${num(alvo - total)}` : ""}</small></div>
+    <div class="trilho"><div class="enche" style="width:${pct}%"></div></div></div>`;
+}
+function blocoTiktok(d) {
+  const mt = d.meta_tiktok;
+  if (!mt || !(mt.subs || []).length) return "";
+  if (mt.expira && mt.expira < Date.now() / 1000 - 600) return "";
+  return `<div class="meta tiktok"><div class="topo"><span>🎯 Meta da LIVE</span></div>${mt.subs.map(s => {
+    const ok = s.alvo && s.progresso >= s.alvo, pct = s.alvo ? Math.min(100, s.progresso / s.alvo * 100) : 0;
+    return `<div class="mtk">${s.icone ? `<img src="${esc(s.icone)}" referrerpolicy="no-referrer" onerror="this.replaceWith('🎁')">` : "🎁"}
+      <span>${esc(s.presente)}</span><b>${ok ? "✓ " : ""}${num(s.progresso)}/${num(s.alvo)}</b>
+      <div class="trilho"><div class="enche" style="width:${pct}%;${ok ? "background:var(--ok)" : ""}"></div></div></div>`;
+  }).join("")}</div>`;
+}
+function desenharMetas(d) {
+  const ms = (d.metas || []).slice().sort((a, b) => a.valor - b.valor), por = t => ms.filter(m => (m.tipo || "curtidas") === t);
+  const quer = t => QUAIS === "todas" || QUAIS.split(",").includes(t);
+  raiz.innerHTML = `<div class="metas">${["curtidas", "seguidores", "diamantes"].filter(quer).map(t => blocoMeta(t, por(t), d)).join("")}${quer("tiktok") ? blocoTiktok(d) : ""}</div>`;
+}
+
+// ---------------- Batalha ----------------
+let relogio = null;
+function desenharBatalha(d) {
+  const b = d.batalha;
+  if (!b) { raiz.innerHTML = ""; relogio = null; return; }
+  const fim = b.status !== "andamento", pct = b.nos + b.eles ? b.nos / (b.nos + b.eles) * 100 : 50;
+  const time = l => l.slice(0, 3).map(a => `<b>${esc(a.nome)}</b> ${num(a.pontos)}`).join(" · ");
+  relogio = fim ? null : {restante: b.restante, recebido: Date.now()};
+  raiz.innerHTML = `<div class="batalha"><div class="bt-topo"><span class="bt-rot">⚔️ BATALHA</span>
+      ${fim ? `<span class="bt-res ${b.resultado}">${{vitoria: "🏆 VITÓRIA!", derrota: "Fim da batalha", empate: "🤝 Empate"}[b.resultado] || "Fim"}</span>`
+            : `<span class="bt-tempo" id="bt-tempo"></span>${b.missao_ativa ? '<span class="bt-missao">⚡ PONTOS EM DOBRO</span>' : ""}`}</div>
+    <div class="bt-lados"><div class="bt-lado nos"><span class="bt-nome">${esc(d.nome || "Nós")}</span><span class="bt-pts">${num(b.nos)}</span></div>
+      <b style="opacity:.7">×</b>
+      <div class="bt-lado eles"><span class="bt-nome">${esc(b.adversario)}</span><span class="bt-pts">${num(b.eles)}</span></div></div>
+    <div class="bt-cabo"><div class="a" style="width:${pct}%"></div><div class="b"></div></div>
+    ${b.ajudantes_nos.length ? `<div class="bt-time">💪 ${time(b.ajudantes_nos)}</div>` : ""}</div>`;
+  tick();
+}
+function tick() {
+  const el = document.getElementById("bt-tempo");
+  if (!el || !relogio) return;
+  const r = Math.max(0, relogio.restante - Math.floor((Date.now() - relogio.recebido) / 1000));
+  el.textContent = String(Math.floor(r / 60)).padStart(2, "0") + ":" + String(r % 60).padStart(2, "0");
+  el.classList.toggle("fim30", r <= 30);
+}
+setInterval(tick, 500);
+
+// ---------------- Alertas animados ----------------
+const TIPOS_ALERTA = (P.get("tipos") || "seguir,compartilhar,heart,presente,metas,batalha").toLowerCase().split(",");
+const DURACAO = Math.max(2, Math.min(20, Number(P.get("duracao")) || 5)) * 1000;
+let ultimoAlerta = null, filaAlertas = [], mostrando = false;
+function textoAlerta(a) {
+  const M = {seguir: ["💖", "começou a seguir!"], compartilhar: ["🔁", "compartilhou a live!"], heart: ["💗", "enviou Heart Me!"]};
+  if (M[a.tipo]) return {grupo: a.tipo, emo: M[a.tipo][0], quem: a.nome, oque: M[a.tipo][1]};
+  if (a.tipo === "presente") return {grupo: "presente", emo: "🎁", quem: a.nome, oque: `enviou ${a.qtd > 1 ? a.qtd + "× " : ""}${a.presente || "um presente"}!`};
+  if (a.tipo === "meta") return {grupo: "metas", emo: "🎯", quem: `Meta de ${num(a.valor)} ${{seguidores: "seguidores", diamantes: "diamantes"}[a.meta_tipo] || "curtidas"}`, oque: "batida! Obrigado! 🎉"};
+  if (a.tipo === "meta_tiktok") return {grupo: "metas", emo: "🎯", quem: `Meta: ${num(a.valor)} ${a.presente || ""}`, oque: "batida! Obrigado! 🎉"};
+  if (a.tipo === "batalha_inicio") return {grupo: "batalha", emo: "⚔️", quem: "Começou a batalha!", oque: `contra ${a.adversario || "a adversária"}`};
+  if (a.tipo === "batalha_fim") return {grupo: "batalha", emo: a.resultado === "vitoria" ? "🏆" : "💪",
+    quem: {vitoria: "Vencemos a batalha!", derrota: "Fim da batalha", empate: "Empate na batalha!"}[a.resultado] || "Fim da batalha",
+    oque: (a.ajudantes || []).length ? "Obrigado, " + a.ajudantes.join(", ") + "!" : (a.placar || "")};
+  return null;
+}
+function receberAlertas(lista) {
+  if (ultimoAlerta === null) { ultimoAlerta = lista.length ? lista[lista.length - 1].id : 0; return; }   // não repete os antigos
+  for (const a of lista) {
+    if (a.id <= ultimoAlerta) continue;
+    ultimoAlerta = a.id;
+    const t = textoAlerta(a);
+    if (t && TIPOS_ALERTA.includes(t.grupo) && filaAlertas.length < 15) filaAlertas.push({...t, tipo: a.tipo, handle: a.handle});
+  }
+  if (!mostrando) proximoAlerta();
+}
+function proximoAlerta() {
+  const a = filaAlertas.shift();
+  if (!a) { mostrando = false; raiz.innerHTML = ""; return; }
+  mostrando = true;
+  const grupo = a.tipo.startsWith("batalha") ? "batalha" : a.tipo.startsWith("meta") ? "meta" : a.tipo;
+  raiz.innerHTML = `<div class="alertas"><div class="alerta t-${grupo}" id="al"><span class="emo">${a.emo}</span>
+    <div class="txt"><span class="quem">${esc(a.quem)}</span><span class="oque">${esc(a.oque)}</span></div></div></div>`;
+  const dur = filaAlertas.length > 3 ? DURACAO * .6 : DURACAO;   // fila grande: passa mais rápido
+  setTimeout(() => { const el = document.getElementById("al"); if (el) el.classList.add("sai"); }, dur - 450);
+  setTimeout(proximoAlerta, dur);
+}
+
+// ---------------- laço ----------------
+async function atualizar() {
+  try {
+    const d = await (await fetch(API + "/api/overlay", {cache: "no-store"})).json();
+    conseguiu = true; falhas = 0;
+    if (TOPS[TIPO]) desenharTop(d);
+    else if (TIPO === "metas") desenharMetas(d);
+    else if (TIPO === "batalha") desenharBatalha(d);
+    else if (TIPO === "alertas") receberAlertas(d.alertas || []);
+    else raiz.innerHTML = `<div class="caixa"><div class="tit">Overlay "${esc(TIPO)}" não existe</div></div>`;
+  } catch (e) {
+    // painel fechado ou bloqueado: mostra um aviso pequeno só se nunca conseguiu (ajuda a configurar)
+    if (!conseguiu && ++falhas >= 4) raiz.innerHTML = `<div class="caixa"><div class="tit" style="font-size:.95rem">⚠️ Abra o Painel da Live neste computador</div></div>`;
+  }
+}
+atualizar();
+setInterval(atualizar, TIPO === "alertas" ? 700 : 1500);
+</script>
+</body>
+</html>
