@@ -94,6 +94,9 @@
   .bt-cabo .a{background:var(--rosa);transition:width .6s} .bt-cabo .b{background:var(--ciano);flex:1}
   .bt-time{font-size:.85rem;color:var(--muted)} .bt-time b{color:var(--ink)}
 
+  /* ---------- pote de avatares ---------- */
+  body.pote{padding:0} #tela-pote{position:fixed;inset:0;width:100vw;height:100vh;display:block}
+
   /* ---------- alertas animados ---------- */
   .alertas{position:relative;width:28rem;min-height:6rem}
   .alerta{display:flex;align-items:center;gap:.8rem;padding:.8rem 1.1rem;border-radius:1.2rem;animation:entra .55s cubic-bezier(.2,1.4,.4,1) both}
@@ -245,6 +248,216 @@ function proximoAlerta() {
   setTimeout(proximoAlerta, dur);
 }
 
+// ---------------- Pote de avatares (física com Matter.js) ----------------
+// &recipiente=pote|aquario|chao  &gatilhos=seguir,heart,presente,compartilhar  &diamantes=1 (mínimo do presente)
+// &grande=100 (diamantes para a foto ficar grande)  &limite=80  &cheio=sumir|transbordar  &nomes=1
+const PT = {
+  recipiente: ["pote", "aquario", "chao"].includes(P.get("recipiente")) ? P.get("recipiente") : "pote",
+  gatilhos: (P.get("gatilhos") || "seguir,heart,presente").toLowerCase().split(","),
+  minDiamantes: Math.max(1, Number(P.get("diamantes")) || 1),
+  grande: Math.max(1, Number(P.get("grande")) || 100),
+  limite: Math.max(10, Math.min(200, Number(P.get("limite")) || 80)),
+  cheio: P.get("cheio") === "transbordar" ? "transbordar" : "sumir",
+  nomes: P.get("nomes") !== "0",
+};
+const COR_TIPO = {seguir: "#fe2c55", heart: "#ff7aa2", presente: "#ffc83d", compartilhar: "#25f4ee"};
+let pote = null;   // {engine, W, H, paredes, fundo, corpos: Map(id -> {body, ...}), vistos, fila, esvaziando}
+const CHAVE_ESV = "pdl-pote-esvaziado-" + PT.recipiente;
+function lerEsvaziado() { try { return Number(localStorage.getItem(CHAVE_ESV)) || 0; } catch (e) { return 0; } }
+function gravarEsvaziado(v) { try { localStorage.setItem(CHAVE_ESV, String(v)); } catch (e) {} }
+
+function iniciarPote() {
+  document.body.classList.add("pote");
+  const cv = document.createElement("canvas"); cv.id = "tela-pote"; document.body.appendChild(cv);
+  const W = innerWidth, H = innerHeight, dpr = devicePixelRatio || 1;
+  cv.width = W * dpr; cv.height = H * dpr;
+  const ctx = cv.getContext("2d"); ctx.scale(dpr, dpr);
+  const {Engine, Bodies, Composite} = Matter;
+  const engine = Engine.create({gravity: {x: 0, y: 1}});
+  const est = {isStatic: true, friction: 0.3, restitution: 0.2};
+  const esc = Number(getComputedStyle(document.documentElement).getPropertyValue("--escala")) || 1;
+  const g = {W, H, ctx, engine, corpos: new Map(), vistos: new Set(), fila: [], esvaziando: false, cortado: lerEsvaziado()};
+  g.raio = Math.max(12, Math.min(W, H) * 0.045 * esc);
+  const fundo = [], lados = [];
+  if (PT.recipiente === "chao") {
+    fundo.push(Bodies.rectangle(W / 2, H + 25, W * 2, 50, est));
+    lados.push(Bodies.rectangle(-25, H / 2, 50, H * 4, est), Bodies.rectangle(W + 25, H / 2, 50, H * 4, est));
+    g.boca = [g.raio, W - g.raio];
+  } else if (PT.recipiente === "pote") {
+    const jw = Math.min(W * .86, H * .62), jh = H * .8, cx = W / 2, base = H - 12, topo = base - jh, e = 24;
+    g.jar = {cx, jw, jh, base, topo};
+    fundo.push(Bodies.rectangle(cx, base + e / 2, jw, e, est));
+    lados.push(Bodies.rectangle(cx - jw / 2 - e / 2 + 2, base - jh / 2, e, jh, est), Bodies.rectangle(cx + jw / 2 + e / 2 - 2, base - jh / 2, e, jh, est));
+    // cantinhos arredondados do fundo do pote
+    lados.push(Bodies.rectangle(cx - jw / 2 + 10, base - 10, 40, 14, {...est, angle: Math.PI / 4}), Bodies.rectangle(cx + jw / 2 - 10, base - 10, 40, 14, {...est, angle: -Math.PI / 4}));
+    g.boca = [cx - jw / 2 + g.raio + 4, cx + jw / 2 - g.raio - 4];
+  } else {   // aquário redondo: arco de pedacinhos, aberto em cima
+    const R = Math.min(W * .47, H * .46), cx = W / 2, cy = H - R - 14, e = 22;
+    g.aq = {cx, cy, R};
+    for (let a = -40; a <= 220; a += 5) {
+      const r = a * Math.PI / 180, x = cx + Math.cos(r) * (R + e / 2), y = cy + Math.sin(r) * (R + e / 2);
+      const peca = Bodies.rectangle(x, y, e, 2 * Math.PI * R / 72 + 6, {...est, angle: r});
+      (a > 30 && a < 150 ? fundo : lados).push(peca);
+    }
+    g.boca = [cx - R * .55, cx + R * .55];
+  }
+  Composite.add(engine.world, [...fundo, ...lados]);
+  g.fundo = fundo;
+  pote = g;
+  requestAnimationFrame(desenharPote);
+}
+
+function tamanhoDe(item) {
+  if (item.tipo !== "presente") return 1;
+  return item.diamantes >= PT.grande ? 1.7 : 1.25;
+}
+function soltarNoPote(item, instantaneo) {
+  const {Bodies, Composite, Body} = Matter, g = pote;
+  const k = tamanhoDe(item), r = g.raio * k;
+  const x = g.boca[0] + Math.random() * Math.max(1, g.boca[1] - g.boca[0]);
+  const y = instantaneo ? g.H * .1 - Math.random() * g.H * 1.2 : -r - 10;
+  const body = Bodies.circle(x, y, r, {restitution: .35, friction: .06, frictionAir: .012, density: .002});
+  Body.setAngularVelocity(body, (Math.random() - .5) * .2);
+  const img = new Image(); img.referrerPolicy = "no-referrer";
+  const dado = {body, item, r, k, img, ok: false, nasceu: instantaneo ? 0 : performance.now(), alpha: 1, saindo: false};
+  if (item.foto) { img.onload = () => dado.ok = true; img.src = item.foto; }
+  g.corpos.set(item.handle + "|" + item.tipo, dado);
+  Composite.add(g.engine.world, body);
+  limitarPote();
+}
+function limitarPote() {
+  const g = pote, vivos = [...g.corpos.values()].filter(c => !c.saindo);
+  if (vivos.length <= PT.limite) return;
+  if (PT.cheio === "transbordar") return esvaziarPote();
+  vivos.sort((a, b) => a.item.t - b.item.t).slice(0, vivos.length - PT.limite).forEach(c => c.saindo = true);   // as mais antigas somem devagar
+}
+function esvaziarPote() {
+  const g = pote;
+  if (g.esvaziando) return;
+  g.esvaziando = true;
+  Matter.Composite.remove(g.engine.world, g.fundo);   // o fundo abre e tudo cai
+  setTimeout(() => {
+    g.corpos.forEach(c => Matter.Composite.remove(g.engine.world, c.body));
+    g.corpos.clear();
+    Matter.Composite.add(g.engine.world, g.fundo);
+    g.cortado = Date.now() / 1000; gravarEsvaziado(g.cortado);
+    g.esvaziando = false;
+  }, 2600);
+}
+function poteReceber(lista) {
+  if (!pote) iniciarPote();
+  const g = pote, primeira = g.vistos.size === 0 && !g.carregou;
+  if (primeira) {   // ao abrir: só as mais recentes que cabem (sem transbordar nem sumir de cara)
+    const validos = lista.filter(i => PT.gatilhos.includes(i.tipo) && !(i.tipo === "presente" && i.diamantes < PT.minDiamantes) && i.t > g.cortado);
+    const fora = new Set(validos.slice(0, Math.max(0, validos.length - (PT.limite - 1))).map(i => i.handle + "|" + i.tipo));
+    fora.forEach(k => g.vistos.add(k));
+  }
+  for (const item of lista) {
+    if (!PT.gatilhos.includes(item.tipo)) continue;
+    if (item.tipo === "presente" && item.diamantes < PT.minDiamantes) continue;
+    if (item.t <= g.cortado) continue;
+    const chave = item.handle + "|" + item.tipo;
+    const ja = g.corpos.get(chave);
+    if (ja) {   // presente de novo: a foto cresce se passou do limite de "grande"
+      ja.item.foto = ja.item.foto || item.foto;
+      if (item.foto && !ja.ok && !ja.img.src) { ja.img.onload = () => ja.ok = true; ja.img.src = item.foto; }
+      const k = tamanhoDe(item);
+      if (k > ja.k) { Matter.Body.scale(ja.body, k / ja.k, k / ja.k); ja.r = g.raio * k; ja.k = k; ja.item.diamantes = item.diamantes; ja.nasceu = performance.now(); }
+      continue;
+    }
+    if (g.vistos.has(chave)) continue;
+    g.vistos.add(chave);
+    if (primeira) soltarNoPote(item, true); else g.fila.push(item);
+  }
+  if (primeira) {   // recarregou a página: o pote se recompõe na hora
+    for (let i = 0; i < 360; i++) Matter.Engine.update(g.engine, 1000 / 60);
+    g.carregou = true;
+  }
+}
+setInterval(() => { if (pote && !pote.esvaziando && pote.fila.length) soltarNoPote(pote.fila.shift(), false); }, 380);
+
+function desenharRecipienteAtras(g) {
+  const c = g.ctx;
+  if (g.jar) {
+    const {cx, jw, jh, base, topo} = g.jar, x0 = cx - jw / 2 - 10, x1 = cx + jw / 2 + 10;
+    const grad = c.createLinearGradient(x0, 0, x1, 0);
+    grad.addColorStop(0, "rgba(255,255,255,.16)"); grad.addColorStop(.5, "rgba(255,255,255,.05)"); grad.addColorStop(1, "rgba(255,255,255,.14)");
+    c.fillStyle = grad; c.beginPath(); c.roundRect(x0, topo, x1 - x0, jh + 10, [18, 18, 46, 46]); c.fill();
+  } else if (g.aq) {
+    const {cx, cy, R} = g.aq;
+    const grad = c.createRadialGradient(cx - R * .3, cy - R * .3, R * .2, cx, cy, R * 1.05);
+    grad.addColorStop(0, "rgba(140,240,255,.10)"); grad.addColorStop(1, "rgba(37,244,238,.22)");
+    c.fillStyle = grad; c.beginPath(); c.arc(cx, cy, R + 10, 0, Math.PI * 2); c.fill();
+    c.save(); c.beginPath(); c.arc(cx, cy, R + 10, 0, Math.PI * 2); c.clip();
+    c.fillStyle = "rgba(37,180,238,.18)"; c.fillRect(cx - R - 12, cy - R * .35, 2 * R + 24, 2 * R);   // água
+    const t = performance.now() / 1000;
+    c.fillStyle = "rgba(255,255,255,.55)";
+    for (let i = 0; i < 9; i++) {   // bolhinhas
+      const bx = cx - R * .7 + ((i * 97) % (R * 1.4)), by = cy + R - ((t * 40 + i * 53) % (R * 1.3));
+      c.beginPath(); c.arc(bx, by, 2 + (i % 3), 0, Math.PI * 2); c.fill();
+    }
+    c.restore();
+  }
+}
+function desenharRecipienteFrente(g) {
+  const c = g.ctx;
+  c.lineWidth = 6; c.strokeStyle = "rgba(255,255,255,.75)"; c.shadowColor = "rgba(0,0,0,.45)"; c.shadowBlur = 8;
+  if (g.jar) {
+    const {cx, jw, jh, base, topo} = g.jar, x0 = cx - jw / 2 - 10, x1 = cx + jw / 2 + 10;
+    c.beginPath(); c.roundRect(x0, topo, x1 - x0, jh + 10, [18, 18, 46, 46]); c.stroke();
+    c.lineWidth = 12; c.strokeStyle = "rgba(254,44,85,.9)";   // borda da boca do pote
+    c.beginPath(); c.moveTo(x0 - 8, topo); c.lineTo(x1 + 8, topo); c.stroke();
+    c.shadowBlur = 0; c.fillStyle = "rgba(255,255,255,.22)";   // reflexo do vidro
+    c.beginPath(); c.roundRect(x0 + 14, topo + 22, 10, jh * .7, 6); c.fill();
+  } else if (g.aq) {
+    const {cx, cy, R} = g.aq;
+    c.beginPath(); c.arc(cx, cy, R + 10, -50 * Math.PI / 180, 230 * Math.PI / 180); c.stroke();
+    c.shadowBlur = 0; c.fillStyle = "rgba(255,255,255,.22)";
+    c.beginPath(); c.ellipse(cx - R * .55, cy - R * .1, 9, R * .38, .35, 0, Math.PI * 2); c.fill();
+  }
+  c.shadowBlur = 0;
+}
+function desenharPote() {
+  const g = pote, c = g.ctx, agora = performance.now();
+  Matter.Engine.update(g.engine, 1000 / 60);
+  c.clearRect(0, 0, g.W, g.H);
+  desenharRecipienteAtras(g);
+  for (const [chave, d] of g.corpos) {
+    const b = d.body, {x, y} = b.position;
+    if (d.saindo) { d.alpha -= .02; if (d.alpha <= 0) { Matter.Composite.remove(g.engine.world, b); g.corpos.delete(chave); continue; } }
+    if (y > g.H + 300) { Matter.Composite.remove(g.engine.world, b); g.corpos.delete(chave); continue; }
+    const r = d.r, cor = COR_TIPO[d.item.tipo] || "#fff";
+    c.save(); c.globalAlpha = d.alpha; c.translate(x, y); c.rotate(b.angle);
+    if (d.k >= 1.7) { c.shadowColor = "#ffc83d"; c.shadowBlur = 18; }
+    c.beginPath(); c.arc(0, 0, r, 0, Math.PI * 2); c.fillStyle = cor; c.fill(); c.shadowBlur = 0;
+    c.save(); c.beginPath(); c.arc(0, 0, r - 3, 0, Math.PI * 2); c.clip();
+    if (d.ok) c.drawImage(d.img, -r + 3, -r + 3, 2 * r - 6, 2 * r - 6);
+    else {
+      const gr = c.createLinearGradient(-r, -r, r, r); gr.addColorStop(0, "#25f4ee"); gr.addColorStop(1, "#fe2c55");
+      c.fillStyle = gr; c.fillRect(-r, -r, 2 * r, 2 * r);
+      c.fillStyle = "#fff"; c.font = `900 ${r * .9}px "TikTok Sans", Inter, Arial`; c.textAlign = "center"; c.textBaseline = "middle";
+      c.fillText((d.item.nome || "?").trim()[0]?.toUpperCase() || "?", 0, r * .06);
+    }
+    c.restore(); c.restore();
+    const idade = (agora - d.nasceu) / 1000;
+    if (PT.nomes && d.nasceu && idade < 3.2) {   // nome aparece enquanto cai
+      c.save(); c.globalAlpha = Math.min(1, (3.2 - idade) / .6);
+      c.font = `800 ${Math.max(12, g.raio * .55)}px "TikTok Sans", Inter, Arial`; c.textAlign = "center";
+      c.lineWidth = 4; c.strokeStyle = "rgba(0,0,0,.85)"; c.fillStyle = "#fff";
+      const txt = (d.item.tipo === "presente" ? "🎁 " : d.item.tipo === "heart" ? "💗 " : d.item.tipo === "compartilhar" ? "🔁 " : "💖 ") + d.item.nome;
+      c.strokeText(txt, x, y - r - 8); c.fillText(txt, x, y - r - 8); c.restore();
+    }
+  }
+  desenharRecipienteFrente(g);
+  requestAnimationFrame(desenharPote);
+}
+if (TIPO === "pote") {
+  const s = document.createElement("script");
+  s.src = API ? "matter.min.js" : "/matter.min.js";   // no GitHub Pages fica ao lado desta página
+  s.onload = () => atualizar();
+  document.head.appendChild(s);
+}
+
 // ---------------- laço ----------------
 async function atualizar() {
   try {
@@ -254,6 +467,7 @@ async function atualizar() {
     else if (TIPO === "metas") desenharMetas(d);
     else if (TIPO === "batalha") desenharBatalha(d);
     else if (TIPO === "alertas") receberAlertas(d.alertas || []);
+    else if (TIPO === "pote") { if (window.Matter) poteReceber(d.pote || []); }
     else raiz.innerHTML = `<div class="caixa"><div class="tit">Overlay "${esc(TIPO)}" não existe</div></div>`;
   } catch (e) {
     // painel fechado ou bloqueado: mostra um aviso pequeno só se nunca conseguiu (ajuda a configurar)
