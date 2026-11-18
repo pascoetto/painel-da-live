@@ -93,6 +93,11 @@
   .bt-cabo{display:flex;height:.8rem;border-radius:99px;overflow:hidden;margin:.55rem 0 .35rem;background:rgba(255,255,255,.15)}
   .bt-cabo .a{background:var(--rosa);transition:width .6s} .bt-cabo .b{background:var(--ciano);flex:1}
   .bt-time{font-size:.85rem;color:var(--muted)} .bt-time b{color:var(--ink)}
+  .bt-rl{display:grid;grid-template-columns:2rem minmax(8rem,1.6fr) 1.4fr 3.5rem;align-items:center;gap:.5rem;padding:.3rem .5rem;border-radius:.7rem;margin:.25rem 0}
+  .bt-rl.nos{background:rgba(254,44,85,.22);outline:2px solid var(--rosa)}
+  .bt-p{font-size:1.05rem;opacity:.85} .bt-v{font-size:1.4rem;text-align:right;font-variant-numeric:tabular-nums;color:var(--ciano)} .bt-rl.nos .bt-v{color:var(--rosa)}
+  .bt-br{height:.6rem;border-radius:99px;background:rgba(255,255,255,.15);overflow:hidden}
+  .bt-br span{display:block;height:100%;background:var(--ciano);border-radius:99px;transition:width .6s} .bt-rl.nos .bt-br span{background:var(--rosa)}
 
   /* ---------- pote de avatares ---------- */
   body.pote{padding:0} #tela-pote{position:fixed;inset:0;width:100vw;height:100vh;display:block}
@@ -191,6 +196,16 @@ function desenharBatalha(d) {
   const fim = b.status !== "andamento", pct = b.nos + b.eles ? b.nos / (b.nos + b.eles) * 100 : 50;
   const time = l => l.slice(0, 3).map(a => `<b>${esc(a.nome)}</b> ${num(a.pontos)}`).join(" · ");
   relogio = fim ? null : {restante: b.restante, recebido: Date.now()};
+  if (b.multi && b.ranking) {   // 3 ou mais na batalha: lista com todos
+    const max = Math.max(1, ...b.ranking.map(r => r.pontos));
+    const res = b.resultado === "vitoria" ? "🏆 1º LUGAR!" : b.resultado === "empate" ? "🤝 Empate" : `${b.posicao}º lugar`;
+    raiz.innerHTML = `<div class="batalha"><div class="bt-topo"><span class="bt-rot">⚔️ BATALHA</span>
+        ${fim ? `<span class="bt-res ${b.resultado}">${res}</span>` : `<span class="bt-tempo" id="bt-tempo"></span>${b.missao_ativa ? '<span class="bt-missao">⚡ PONTOS EM DOBRO</span>' : ""}`}</div>
+      ${b.ranking.map((r, i) => `<div class="bt-rl ${r.nos ? "nos" : ""}"><b class="bt-p">${i + 1}º</b><span class="bt-nome">${esc(r.nos && d.nome && r.nomes.length === 1 ? d.nome : r.nomes.join(" + "))}</span>
+        <span class="bt-br"><span style="width:${Math.max(2, r.pontos / max * 100)}%"></span></span><b class="bt-v">${num(r.pontos)}</b></div>`).join("")}
+      ${b.ajudantes_nos.length ? `<div class="bt-time">💪 ${time(b.ajudantes_nos)}</div>` : ""}</div>`;
+    return tick();
+  }
   raiz.innerHTML = `<div class="batalha"><div class="bt-topo"><span class="bt-rot">⚔️ BATALHA</span>
       ${fim ? `<span class="bt-res ${b.resultado}">${{vitoria: "🏆 VITÓRIA!", derrota: "Fim da batalha", empate: "🤝 Empate"}[b.resultado] || "Fim"}</span>`
             : `<span class="bt-tempo" id="bt-tempo"></span>${b.missao_ativa ? '<span class="bt-missao">⚡ PONTOS EM DOBRO</span>' : ""}`}</div>
