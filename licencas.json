@@ -1,11 +1,11 @@
 {
  "versao": 1,
- "emitida": "2026-11-14T23:33:30Z",
+ "emitida": "2026-11-19T00:11:23Z",
  "contato": "WhatsApp (19) 99630-7447",
  "licencas": {
   "b1f4978440f42395856c92c3ed5492e9": {
    "u": "d44cbf45d85a7c567a8bf55acf5e935e",
-   "vence": "2026-11-27",
+   "vence": "2026-12-27",
    "tipo": "pago"
   },
   "65c610369c77ef0c901d0596724ccd82": {
@@ -19,5 +19,5 @@
    "tipo": "pago"
   }
  },
- "assinatura": "0f10eedb1e0755fb9665d6df972fcef948ae03c60cf2c94a5c298cfa49a249d5a147344b32290396820904085d2246432f24a9e18137405eb8623c1d520e2f0b"
+ "assinatura": "8bfca9ea41d480f32b265ed0dd834ff9d84bf1477acb290f65ee821b19a271170d42359d418f7e416c54b9279995f8c85074d0f274f26531311ef7dc51105e04"
 }
