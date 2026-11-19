@@ -281,6 +281,28 @@ const CHAVE_ESV = "pdl-pote-esvaziado-" + PT.recipiente;
 function lerEsvaziado() { try { return Number(localStorage.getItem(CHAVE_ESV)) || 0; } catch (e) { return 0; } }
 function gravarEsvaziado(v) { try { localStorage.setItem(CHAVE_ESV, String(v)); } catch (e) {} }
 
+function perfilPote(cx, jw, jh, base) {
+  // Pote de boca larga (sem tampa): rosca curta, ombro pequeno, corpo reto com friso
+  // e a parte de baixo afinando até a base oval. Contorno da metade direita, de cima para baixo.
+  const bw = jw / 2, nw = bw * .87, bb = bw * .8, topo = base - jh;
+  const yG = topo + jh * .15, yO = yG + jh * .06, yF = topo + jh * .7, yC = yF + jh * .05;
+  const meio = [[nw, topo], [nw, yG]];
+  for (let k = 1; k <= 8; k++) { const a = k / 8 * Math.PI / 2; meio.push([nw + (bw - nw) * Math.sin(a), yG + (yO - yG) * (1 - Math.cos(a))]); }
+  meio.push([bw, yF], [bw * .985, yF + jh * .012], [bw, yC]);           // friso
+  for (let k = 1; k <= 12; k++) {                                       // afina até a base
+    const f = k / 12, x = bw - (bw - bb) * Math.pow(f, 1.6), y = yC + (base - yC) * f;
+    meio.push([x, y]);
+  }
+  meio.push([0, base]);
+  return {cx, jw, jh, base, topo, bw, nw, bb, yG, yO, yF, yC, rb: 0, meio};
+}
+function caminhoPote(c, j) {
+  c.beginPath();
+  c.moveTo(j.cx + j.meio[0][0], j.meio[0][1]);
+  j.meio.forEach(([x, y]) => c.lineTo(j.cx + x, y));
+  [...j.meio].reverse().forEach(([x, y]) => c.lineTo(j.cx - x, y));
+  c.closePath();
+}
 function iniciarPote() {
   document.body.classList.add("pote");
   const cv = document.createElement("canvas"); cv.id = "tela-pote"; document.body.appendChild(cv);
@@ -299,13 +321,22 @@ function iniciarPote() {
     lados.push(Bodies.rectangle(-25, H / 2, 50, H * 4, est), Bodies.rectangle(W + 25, H / 2, 50, H * 4, est));
     g.boca = [g.raio, W - g.raio];
   } else if (PT.recipiente === "pote") {
-    const jw = Math.min(W * .86, H * .62), jh = H * .8, cx = W / 2, base = H - 12, topo = base - jh, e = 24;
-    g.jar = {cx, jw, jh, base, topo};
-    fundo.push(Bodies.rectangle(cx, base + e / 2, jw, e, est));
-    lados.push(Bodies.rectangle(cx - jw / 2 - e / 2 + 2, base - jh / 2, e, jh, est), Bodies.rectangle(cx + jw / 2 + e / 2 - 2, base - jh / 2, e, jh, est));
-    // cantinhos arredondados do fundo do pote
-    lados.push(Bodies.rectangle(cx - jw / 2 + 10, base - 10, 40, 14, {...est, angle: Math.PI / 4}), Bodies.rectangle(cx + jw / 2 - 10, base - 10, 40, 14, {...est, angle: -Math.PI / 4}));
-    g.boca = [cx - jw / 2 + g.raio + 4, cx + jw / 2 - g.raio - 4];
+    // pote de vidro sem tampa: gargalo com rosca, ombros arredondados, corpo largo, fundo arredondado
+    const jw = Math.min(W * .9, H * .82), jh = Math.min(H * .9, jw * 1.05), cx = W / 2, base = H - 14, e = 26;
+    g.jar = perfilPote(cx, jw, jh, base);
+    const meio = g.jar.meio, fundoY = base - 2;
+    const pecas = (pts, sinal) => {
+      for (let i = 0; i < pts.length - 1; i++) {
+        const [x1, y1] = pts[i], [x2, y2] = pts[i + 1], dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy);
+        if (L < .5) continue;
+        const nx = sinal * dy / L, ny = sinal * -dx / L;   // normal para fora do pote
+        const peca = Bodies.rectangle((x1 + x2) / 2 + nx * e / 2, (y1 + y2) / 2 + ny * e / 2, L + 3, e, {...est, angle: Math.atan2(dy, dx)});
+        (y1 >= fundoY && y2 >= fundoY ? fundo : lados).push(peca);
+      }
+    };
+    pecas(meio.map(([x, y]) => [cx + x, y]), 1);           // lado direito
+    pecas(meio.map(([x, y]) => [cx - x, y]), -1);          // lado esquerdo (espelhado)
+    g.boca = [cx - g.jar.nw + g.raio + 6, cx + g.jar.nw - g.raio - 6];
   } else {   // aquário redondo: arco de pedacinhos, aberto em cima
     const R = Math.min(W * .47, H * .46), cx = W / 2, cy = H - R - 14, e = 22;
     g.aq = {cx, cy, R};
@@ -394,10 +425,13 @@ setInterval(() => { if (pote && !pote.esvaziando && pote.fila.length) soltarNoPo
 function desenharRecipienteAtras(g) {
   const c = g.ctx;
   if (g.jar) {
-    const {cx, jw, jh, base, topo} = g.jar, x0 = cx - jw / 2 - 10, x1 = cx + jw / 2 + 10;
-    const grad = c.createLinearGradient(x0, 0, x1, 0);
-    grad.addColorStop(0, "rgba(255,255,255,.16)"); grad.addColorStop(.5, "rgba(255,255,255,.05)"); grad.addColorStop(1, "rgba(255,255,255,.14)");
-    c.fillStyle = grad; c.beginPath(); c.roundRect(x0, topo, x1 - x0, jh + 10, [18, 18, 46, 46]); c.fill();
+    const j = g.jar, grad = c.createLinearGradient(j.cx - j.bw, 0, j.cx + j.bw, 0);
+    grad.addColorStop(0, "rgba(255,255,255,.20)"); grad.addColorStop(.25, "rgba(235,242,255,.07)");
+    grad.addColorStop(.6, "rgba(200,215,240,.05)"); grad.addColorStop(1, "rgba(255,255,255,.18)");
+    caminhoPote(c, j); c.fillStyle = grad; c.fill();
+    c.lineWidth = 2; c.strokeStyle = "rgba(255,255,255,.28)";   // fundo oval (efeito 3D)
+    c.beginPath(); c.ellipse(j.cx, j.base - j.jh * .045, j.bb * .92, j.jh * .045, 0, 0, Math.PI * 2); c.stroke();
+    c.beginPath(); c.ellipse(j.cx, j.topo + 3, j.nw, j.jh * .03, 0, Math.PI, Math.PI * 2); c.stroke();   // fundo da boca (lado de trás)
   } else if (g.aq) {
     const {cx, cy, R} = g.aq;
     const grad = c.createRadialGradient(cx - R * .3, cy - R * .3, R * .2, cx, cy, R * 1.05);
@@ -418,12 +452,32 @@ function desenharRecipienteFrente(g) {
   const c = g.ctx;
   c.lineWidth = 6; c.strokeStyle = "rgba(255,255,255,.75)"; c.shadowColor = "rgba(0,0,0,.45)"; c.shadowBlur = 8;
   if (g.jar) {
-    const {cx, jw, jh, base, topo} = g.jar, x0 = cx - jw / 2 - 10, x1 = cx + jw / 2 + 10;
-    c.beginPath(); c.roundRect(x0, topo, x1 - x0, jh + 10, [18, 18, 46, 46]); c.stroke();
-    c.lineWidth = 12; c.strokeStyle = "rgba(254,44,85,.9)";   // borda da boca do pote
-    c.beginPath(); c.moveTo(x0 - 8, topo); c.lineTo(x1 + 8, topo); c.stroke();
-    c.shadowBlur = 0; c.fillStyle = "rgba(255,255,255,.22)";   // reflexo do vidro
-    c.beginPath(); c.roundRect(x0 + 14, topo + 22, 10, jh * .7, 6); c.fill();
+    const j = g.jar;
+    c.lineWidth = 4; c.strokeStyle = "rgba(255,255,255,.8)";
+    caminhoPote(c, j); c.stroke();
+    c.shadowBlur = 0;
+    // boca (elipse da frente) e roscas inclinadas
+    c.lineWidth = 4; c.strokeStyle = "rgba(255,255,255,.85)";
+    c.beginPath(); c.ellipse(j.cx, j.topo + 3, j.nw, j.jh * .03, 0, 0, Math.PI); c.stroke();
+    c.lineWidth = 2.5; c.strokeStyle = "rgba(255,255,255,.5)"; c.lineCap = "round";
+    const hR = j.yG - j.topo;
+    for (const f of [.3, .55, .8]) {
+      const y = j.topo + hR * f;
+      c.beginPath(); c.moveTo(j.cx - j.nw + 2, y + hR * .12); c.quadraticCurveTo(j.cx, y + hR * .02, j.cx + j.nw - 2, y - hR * .08); c.stroke();
+    }
+    c.beginPath(); c.moveTo(j.cx - j.nw, j.yG); c.quadraticCurveTo(j.cx, j.yG + 6, j.cx + j.nw, j.yG); c.stroke();
+    // friso da parte de baixo
+    c.lineWidth = 2.5; c.strokeStyle = "rgba(255,255,255,.45)";
+    c.beginPath(); c.moveTo(j.cx - j.bw + 3, j.yF + j.jh * .006); c.quadraticCurveTo(j.cx, j.yF + j.jh * .03, j.cx + j.bw - 3, j.yF + j.jh * .006); c.stroke();
+    // reflexos do vidro
+    const lg = c.createLinearGradient(0, j.yO + 10, 0, j.yF);
+    lg.addColorStop(0, "rgba(255,255,255,.45)"); lg.addColorStop(1, "rgba(255,255,255,.05)");
+    c.fillStyle = lg;
+    c.beginPath(); c.roundRect(j.cx - j.bw + 12, j.yO + 12, 10, (j.yF - j.yO) * .85, 5); c.fill();
+    c.beginPath(); c.roundRect(j.cx + j.bw - 22, j.yO + 12, 7, (j.yF - j.yO) * .6, 4); c.fill();
+    c.fillStyle = "rgba(255,255,255,.18)";
+    c.beginPath(); c.roundRect(j.cx - j.bw * .35, j.yO + 14, j.bw * .7, 6, 3); c.fill();
+    c.lineCap = "butt";
   } else if (g.aq) {
     const {cx, cy, R} = g.aq;
     c.beginPath(); c.arc(cx, cy, R + 10, -50 * Math.PI / 180, 230 * Math.PI / 180); c.stroke();
