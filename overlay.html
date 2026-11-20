@@ -275,7 +275,9 @@ let metasBatidasAntes = null;
 function desenharMetas(d) {
   const ms = (d.metas || []).slice().sort((a, b) => a.valor - b.valor), por = t => ms.filter(m => (m.tipo || "curtidas") === t);
   const totais = {curtidas: d.total_curtidas, seguidores: d.seguidores_total, diamantes: d.total_diamantes};
-  const batidas = ms.filter(m => totais[m.tipo || "curtidas"] >= m.valor).length;
+  const subsTk = ((d.meta_tiktok || {}).subs || []);
+  const batidas = ms.filter(m => totais[m.tipo || "curtidas"] >= m.valor).length +
+                  subsTk.filter(s => s.alvo && s.progresso >= s.alvo).length;   // meta da LIVE do TikTok também
   if (metasBatidasAntes !== null && batidas > metasBatidasAntes) soltarConfete();
   metasBatidasAntes = batidas;
   const quer = t => QUAIS === "todas" || QUAIS.split(",").includes(t);
@@ -700,7 +702,8 @@ function dadosTeste() {
     top_curtidas: cur.map(p => ({...p, total: p.v})), total_curtidas: soma(cur) + 12500,
     top_presentes: pre.map(p => ({...p, diamantes: p.v})), total_diamantes: soma(pre),
     top_compart: com.map(p => ({...p, total: p.v})), total_compart: soma(com),
-    metas: [{tipo: "curtidas", valor: 15000}, {tipo: "curtidas", valor: 30000}, {tipo: "seguidores", valor: 1300}, {tipo: "diamantes", valor: 2000}],
+    // a meta de 18.300 curtidas é batida uns 9 segundos depois de começar o teste (para ver o confete)
+    metas: [{tipo: "curtidas", valor: 15000}, {tipo: "curtidas", valor: 18300}, {tipo: "curtidas", valor: 30000}, {tipo: "seguidores", valor: 1300}, {tipo: "diamantes", valor: 2000}],
     seguidores_total: 1240 + Math.floor(t / 4),
     meta_tiktok: {subs: [{presente: "Rosa", icone: "", alvo: 30, progresso: Math.min(30, 12 + Math.floor(t / 3))}], expira: 0},
     batalha: {status: fimBat ? "fim" : "andamento", restante: Math.max(0, 60 - Math.floor(ciclo)), nos, eles, adversario: "Irmã Cida",
