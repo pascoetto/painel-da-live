@@ -574,6 +574,10 @@ function poteReceber(lista) {
     const fora = new Set(validos.slice(0, Math.max(0, validos.length - (PT.limite - 1))).map(i => i.handle + "|" + i.tipo));
     fora.forEach(k => g.vistos.add(k));
   }
+  if (!TESTE_FIXO && !emTeste) {     // quem não está mais na lista do programa sai do pote
+    const noProg = new Set(lista.map(i => i.handle + "|" + i.tipo));
+    for (const [k, c] of g.corpos) if (!noProg.has(k)) c.saindo = true;
+  }
   for (const item of lista) {
     if (!PT.gatilhos.includes(item.tipo)) continue;
     if (item.tipo === "presente" && item.diamantes < PT.minDiamantes) continue;
@@ -758,13 +762,31 @@ function seloTeste(ligar) {
   if (!ligar && el) el.remove();
 }
 
+// ---------------- visual vindo do programa ----------------
+// O que a cliente escolhe na janela 📺 Overlays fica guardado no programa. Se for diferente do endereço,
+// a página se recarrega com o visual novo (assim não precisa trocar o link no OBS / LIVE Studio).
+function aplicarVisualDoPainel(v) {
+  if (!v || typeof v !== "object") return false;
+  const alvo = new URLSearchParams();
+  ["tipo", "porta", "teste"].forEach(k => { if (P.has(k)) alvo.set(k, P.get(k)); });
+  Object.entries(v).forEach(([k, val]) => { if (!["tipo", "porta", "teste"].includes(k)) alvo.set(k, String(val)); });
+  const norm = q => [...q.entries()].map(([k, x]) => k + "=" + x).sort().join("&");
+  if (norm(alvo) === norm(P)) return false;
+  location.replace(location.pathname + "?" + alvo.toString());
+  return true;
+}
+let sessaoAtual = null;
+
 // ---------------- laço ----------------
 async function atualizar() {
   try {
     let d;
     if (TESTE_FIXO) d = dadosTeste();
     else {
-      d = await (await fetch(API + "/api/overlay", {cache: "no-store"})).json();
+      d = await (await fetch(API + "/api/overlay?tipo=" + encodeURIComponent(TIPO), {cache: "no-store"})).json();
+      if (aplicarVisualDoPainel(d.visual)) return;                         // visual mudou no painel
+      if (d.sessao && sessaoAtual !== null && d.sessao !== sessaoAtual) return location.reload();   // começou do zero
+      if (d.sessao) sessaoAtual = d.sessao;
       if (d.teste > 0) {                                    // "Testar no OBS / LIVE Studio" clicado no painel
         if (!emTeste) { emTeste = true; inicioTeste = Date.now(); ultimoAlerta = null; filaAlertas = []; filaVideos = []; }
         d = dadosTeste();
