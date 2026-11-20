@@ -11,12 +11,15 @@
   Endereço:  /overlay/<tipo>?estilo=painel|limpo&top=10&escala=1&titulo=1
   Tops:      &layout=compacto|lado (quantidade embaixo ou ao lado do nome)  &coroa=0 (tira a coroa do 1º)
   Teste:     &teste=1 mostra dados de exemplo (para ver o visual antes da live)
+  Cores:     &cor=ffffff (texto)  &destaque=tiktok|ffc83d (bordas, barras, números)  &efeito=sombra|contorno|neon|nenhum
+             &fundo=escuro|claro|transparente  &opacidade=0..100  &pulsar=1  &brilho=1  &confete=1
+  Vídeos:    /overlay/videos  (toca o vídeo escolhido para cada momento; &mudo=1 tira o som)
   Tipos:     curtidas · presentes · compartilhamentos · metas · batalha · alertas
   metas:     &quais=todas|curtidas|seguidores|diamantes|tiktok
   alertas:   &tipos=seguir,compartilhar,heart,presente,metas,batalha&duracao=5
 -->
 <style>
-  :root{--rosa:#fe2c55;--ciano:#25f4ee;--ouro:#ffc83d;--roxo:#8a5cf6;--ok:#3ddc84;
+  :root{--rosa:#fe2c55;--ciano:#25f4ee;--rosa-rgb:254,44,85;--ciano-rgb:37,244,238;--ouro:#ffc83d;--roxo:#8a5cf6;--ok:#3ddc84;
         --card:rgba(18,18,26,.86);--linha:rgba(255,255,255,.12);--ink:#fff;--muted:rgba(255,255,255,.72)}
   html{font-size:calc(16px * var(--escala, 1))}
   html,body{margin:0;background:transparent;overflow:hidden}
@@ -25,7 +28,7 @@
   .some{display:none!important}
 
   /* ---------- estilo PAINEL (cartão escuro, rosa e ciano) ---------- */
-  .painel .caixa{background:var(--card);border:2px solid rgba(254,44,85,.55);border-radius:1.25rem;padding:.9rem 1rem 1rem;
+  .painel .caixa{background:var(--card);border:2px solid rgba(var(--rosa-rgb),.55);border-radius:1.25rem;padding:.9rem 1rem 1rem;
     box-shadow:0 .5rem 1.6rem rgba(0,0,0,.35);backdrop-filter:blur(6px);width:23rem}
   .painel .tit{font-weight:900;font-size:1.15rem;margin:0 0 .6rem;display:flex;align-items:center;gap:.45rem;letter-spacing:.02em}
   .painel .tit small{margin-left:auto;font-size:.85rem;color:var(--muted);font-weight:700}
@@ -77,8 +80,33 @@
   .selo-teste{position:fixed;top:.3rem;right:.3rem;z-index:9;background:var(--ouro);color:#2a1d00;font:900 .75rem "TikTok Sans",Arial,sans-serif;
     padding:.15rem .5rem;border-radius:99px;text-shadow:none!important;letter-spacing:.04em}
 
+  /* ---------- cores e efeitos escolhidos ---------- */
+  body.ef-contorno, body.ef-contorno *{text-shadow:-.07rem -.07rem 0 #000,.07rem -.07rem 0 #000,-.07rem .07rem 0 #000,.07rem .07rem 0 #000,0 .1rem .3rem rgba(0,0,0,.8)!important}
+  body.ef-neon, body.ef-neon *{text-shadow:0 0 .2rem var(--brilho-cor),0 0 .55rem var(--brilho-cor),0 0 1rem var(--brilho-cor)!important}
+  body.ef-nenhum, body.ef-nenhum *{text-shadow:none!important}
+  body.ef-sombra.painel *{text-shadow:0 .08rem .25rem rgba(0,0,0,.55)}
+  body.fundo-transparente .caixa, body.fundo-transparente .meta, body.fundo-transparente .batalha, body.fundo-transparente .alerta{backdrop-filter:none;box-shadow:none}
+  .av{color:#fff!important;text-shadow:0 .05rem .2rem rgba(0,0,0,.6)!important}
+  .fundo-claro .pos{background:rgba(0,0,0,.08)}
+  .fundo-claro .compacto .lin:nth-child(1) .val{color:#a86b00}
+  .fundo-claro .trilho{background:rgba(0,0,0,.1);border-color:rgba(0,0,0,.12)}
+  .anim-pulsar .lin.rei .av{animation:pulsa1 1.6s ease-in-out infinite}
+  @keyframes pulsa1{50%{transform:scale(1.12);box-shadow:0 0 .9rem var(--ouro)}}
+  .anim-brilho .enche, .anim-brilho .bt-cabo .a, .anim-brilho .bt-br span{position:relative;overflow:hidden}
+  .anim-brilho .enche::after, .anim-brilho .bt-cabo .a::after, .anim-brilho .bt-br span::after{content:"";position:absolute;inset:0;
+    background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.65) 50%,transparent 80%);transform:translateX(-100%);animation:corre 2.2s ease-in-out infinite}
+  @keyframes corre{60%,100%{transform:translateX(100%)}}
+  .confete{position:fixed;top:-2rem;width:.6rem;height:1rem;border-radius:.15rem;z-index:20;pointer-events:none;animation:cai linear forwards}
+  @keyframes cai{to{transform:translateY(110vh) rotate(720deg);opacity:.9}}
+
+  /* ---------- vídeos dos momentos ---------- */
+  body.videos{padding:0} #tela-video{position:fixed;inset:0;width:100vw;height:100vh;object-fit:contain;background:transparent}
+  .video-teste{position:fixed;inset:8%;border:.25rem dashed var(--ciano);border-radius:1.5rem;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:.4rem;font-weight:900;font-size:1.5rem;text-align:center;background:rgba(0,0,0,.35);animation:entra .5s both}
+  .video-teste small{font-size:1rem;opacity:.85;font-weight:700}
+
   .lin.subiu{animation:subiu 1.1s ease-out}
-  @keyframes subiu{0%{background:rgba(254,44,85,.45)}100%{background:transparent}}
+  @keyframes subiu{0%{background:rgba(var(--rosa-rgb),.45)}100%{background:transparent}}
   .val .ic{font-size:.85em;margin-left:.15rem}
 
   /* ---------- metas ---------- */
@@ -91,8 +119,8 @@
   .meta.diamantes .enche{background:linear-gradient(90deg,var(--ciano),var(--roxo))}
   .meta.tiktok .enche{background:linear-gradient(90deg,#ffe27a,#f5a300)}
   .meta.ok .enche{background:var(--ok)}
-  .painel .meta{background:var(--card);border:2px solid rgba(254,44,85,.45);border-radius:1rem;padding:.7rem .9rem .8rem}
-  .painel .meta.seguidores{border-color:rgba(37,244,238,.5)} .painel .meta.diamantes{border-color:rgba(138,92,246,.6)} .painel .meta.tiktok{border-color:rgba(255,200,61,.6)}
+  .painel .meta{background:var(--card);border:2px solid rgba(var(--rosa-rgb),.45);border-radius:1rem;padding:.7rem .9rem .8rem}
+  .painel .meta.seguidores{border-color:rgba(var(--ciano-rgb),.5)} .painel .meta.diamantes{border-color:rgba(138,92,246,.6)} .painel .meta.tiktok{border-color:rgba(255,200,61,.6)}
   .limpo .trilho{box-shadow:0 0 .4rem rgba(0,0,0,.7)}
   .mtk{display:grid;grid-template-columns:1.5rem 1fr auto;gap:.15rem .5rem;align-items:center;font-size:.92rem;margin-top:.35rem}
   .mtk img{width:1.4rem;height:1.4rem;object-fit:contain} .mtk .trilho{grid-column:2 / 4;height:.55rem}
@@ -100,7 +128,7 @@
 
   /* ---------- batalha ---------- */
   .batalha{width:30rem}
-  .painel .batalha{background:var(--card);border:2px solid rgba(254,44,85,.6);border-radius:1.25rem;padding:.8rem 1rem .9rem;box-shadow:0 .5rem 1.6rem rgba(0,0,0,.35)}
+  .painel .batalha{background:var(--card);border:2px solid rgba(var(--rosa-rgb),.6);border-radius:1.25rem;padding:.8rem 1rem .9rem;box-shadow:0 .5rem 1.6rem rgba(0,0,0,.35)}
   .bt-topo{display:flex;justify-content:center;align-items:center;gap:.7rem;margin-bottom:.4rem;flex-wrap:wrap}
   .bt-rot{font-weight:900;letter-spacing:.1em;font-size:.9rem;opacity:.85}
   .bt-tempo{font-weight:900;font-size:1.7rem;font-variant-numeric:tabular-nums}
@@ -116,7 +144,7 @@
   .bt-cabo .a{background:var(--rosa);transition:width .6s} .bt-cabo .b{background:var(--ciano);flex:1}
   .bt-time{font-size:.85rem;color:var(--muted)} .bt-time b{color:var(--ink)}
   .bt-rl{display:grid;grid-template-columns:2rem minmax(8rem,1.6fr) 1.4fr 3.5rem;align-items:center;gap:.5rem;padding:.3rem .5rem;border-radius:.7rem;margin:.25rem 0}
-  .bt-rl.nos{background:rgba(254,44,85,.22);outline:2px solid var(--rosa)}
+  .bt-rl.nos{background:rgba(var(--rosa-rgb),.22);outline:2px solid var(--rosa)}
   .bt-p{font-size:1.05rem;opacity:.85} .bt-v{font-size:1.4rem;text-align:right;font-variant-numeric:tabular-nums;color:var(--ciano)} .bt-rl.nos .bt-v{color:var(--rosa)}
   .bt-br{height:.6rem;border-radius:99px;background:rgba(255,255,255,.15);overflow:hidden}
   .bt-br span{display:block;height:100%;background:var(--ciano);border-radius:99px;transition:width .6s} .bt-rl.nos .bt-br span{background:var(--rosa)}
@@ -128,7 +156,7 @@
   .alertas{position:relative;width:28rem;min-height:6rem}
   .alerta{display:flex;align-items:center;gap:.8rem;padding:.8rem 1.1rem;border-radius:1.2rem;animation:entra .55s cubic-bezier(.2,1.4,.4,1) both}
   .alerta.sai{animation:sai .45s ease-in both}
-  .painel .alerta{background:var(--card);border:2px solid var(--rosa);box-shadow:0 .6rem 1.8rem rgba(254,44,85,.35)}
+  .painel .alerta{background:var(--card);border:2px solid var(--rosa);box-shadow:0 .6rem 1.8rem rgba(var(--rosa-rgb),.35)}
   .alerta .emo{font-size:2.6rem;line-height:1;animation:pula 1s ease-in-out infinite}
   .alerta .txt{display:flex;flex-direction:column;min-width:0}
   .alerta .quem{font-weight:900;font-size:1.35rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -156,6 +184,40 @@ const LAYOUT = P.get("layout") === "lado" ? "lado" : "compacto";
 const COROA = P.get("coroa") !== "0";
 document.documentElement.style.setProperty("--escala", Math.max(.4, Math.min(3, Number(P.get("escala")) || 1)));
 document.body.className = ESTILO;
+// ---------------- cores e efeitos ----------------
+(function aplicarCores() {
+  const css = document.documentElement.style, hex = v => /^[0-9a-f]{6}$/i.test(v || "") ? "#" + v : "";
+  const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)).join(",");
+  const fundo = ["claro", "transparente"].includes(P.get("fundo")) ? P.get("fundo") : "escuro";
+  const op = Math.max(0, Math.min(100, P.get("opacidade") === null ? 86 : Number(P.get("opacidade")) || 0)) / 100;
+  const cor = hex(P.get("cor")) || (fundo === "claro" ? "#1c1c24" : "");
+  if (cor) { css.setProperty("--ink", cor); css.setProperty("--muted", `rgba(${rgb(cor)},.75)`); }
+  const dest = hex(P.get("destaque"));
+  if (dest) { css.setProperty("--rosa", dest); css.setProperty("--ciano", dest); css.setProperty("--rosa-rgb", rgb(dest)); css.setProperty("--ciano-rgb", rgb(dest)); }
+  css.setProperty("--brilho-cor", dest || "#fe2c55");
+  if (fundo === "claro") { css.setProperty("--card", `rgba(255,255,255,${op})`); css.setProperty("--linha", "rgba(0,0,0,.12)"); }
+  else if (fundo === "transparente") css.setProperty("--card", "transparent");
+  else css.setProperty("--card", `rgba(18,18,26,${op})`);
+  const efeito = ["contorno", "neon", "nenhum"].includes(P.get("efeito")) ? P.get("efeito") : "sombra";
+  document.body.classList.add("ef-" + efeito, "fundo-" + fundo);
+  if (P.get("pulsar") === "1") document.body.classList.add("anim-pulsar");
+  if (P.get("brilho") === "1") document.body.classList.add("anim-brilho");
+})();
+const CONFETE = P.get("confete") === "1";
+function soltarConfete() {
+  if (!CONFETE) return;
+  const cores = ["#fe2c55", "#25f4ee", "#ffc83d", "#8a5cf6", "#3ddc84", "#ffffff"];
+  for (let i = 0; i < 70; i++) {
+    const c = document.createElement("span");
+    c.className = "confete";
+    c.style.left = Math.random() * 100 + "vw";
+    c.style.background = cores[i % cores.length];
+    c.style.animationDuration = (1.8 + Math.random() * 1.8) + "s";
+    c.style.animationDelay = Math.random() * .6 + "s";
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 4500);
+  }
+}
 const raiz = document.getElementById("raiz");
 const num = n => Number(n || 0).toLocaleString("pt-BR");
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
@@ -209,8 +271,13 @@ function blocoTiktok(d) {
       <div class="trilho"><div class="enche" style="width:${pct}%;${ok ? "background:var(--ok)" : ""}"></div></div></div>`;
   }).join("")}</div>`;
 }
+let metasBatidasAntes = null;
 function desenharMetas(d) {
   const ms = (d.metas || []).slice().sort((a, b) => a.valor - b.valor), por = t => ms.filter(m => (m.tipo || "curtidas") === t);
+  const totais = {curtidas: d.total_curtidas, seguidores: d.seguidores_total, diamantes: d.total_diamantes};
+  const batidas = ms.filter(m => totais[m.tipo || "curtidas"] >= m.valor).length;
+  if (metasBatidasAntes !== null && batidas > metasBatidasAntes) soltarConfete();
+  metasBatidasAntes = batidas;
   const quer = t => QUAIS === "todas" || QUAIS.split(",").includes(t);
   raiz.innerHTML = `<div class="metas">${["curtidas", "seguidores", "diamantes"].filter(quer).map(t => blocoMeta(t, por(t), d)).join("")}${quer("tiktok") ? blocoTiktok(d) : ""}</div>`;
 }
@@ -283,11 +350,61 @@ function proximoAlerta() {
   if (!a) { mostrando = false; raiz.innerHTML = ""; return; }
   mostrando = true;
   const grupo = a.tipo.startsWith("batalha") ? "batalha" : a.tipo.startsWith("meta") ? "meta" : a.tipo;
+  if (grupo === "meta") soltarConfete();
   raiz.innerHTML = `<div class="alertas"><div class="alerta t-${grupo}" id="al"><span class="emo">${a.emo}</span>
     <div class="txt"><span class="quem">${esc(a.quem)}</span><span class="oque">${esc(a.oque)}</span></div></div></div>`;
   const dur = filaAlertas.length > 3 ? DURACAO * .6 : DURACAO;   // fila grande: passa mais rápido
   setTimeout(() => { const el = document.getElementById("al"); if (el) el.classList.add("sai"); }, dur - 450);
   setTimeout(proximoAlerta, dur);
+}
+
+// ---------------- Vídeos dos momentos ----------------
+const MUDO = P.get("mudo") === "1";
+let ultimoVideo = null, filaVideos = [], tocandoVideo = false;
+const blobsVideo = {};
+function receberVideos(lista) {
+  if (ultimoVideo === null) { ultimoVideo = lista.length ? lista[lista.length - 1].id : 0; return; }   // não toca os antigos
+  for (const a of lista) {
+    if (a.id <= ultimoVideo) continue;
+    ultimoVideo = a.id;
+    if (a.video && filaVideos.length < 20) filaVideos.push(a.video);
+  }
+  if (!tocandoVideo) proximoVideo();
+}
+async function arquivoVideo(u) {
+  // baixa pelo mesmo caminho dos dados (assim funciona também na página do GitHub, no LIVE Studio)
+  if (blobsVideo[u]) return blobsVideo[u];
+  const r = await fetch(API + u);
+  if (!r.ok) throw new Error("vídeo não encontrado");
+  return (blobsVideo[u] = URL.createObjectURL(await r.blob()));
+}
+async function proximoVideo() {
+  const v = filaVideos.shift();
+  if (!v) { tocandoVideo = false; return; }
+  tocandoVideo = true;
+  document.body.classList.add("videos");
+  let el = document.getElementById("tela-video");
+  if (!el) { el = document.createElement("video"); el.id = "tela-video"; el.playsInline = true; el.style.display = "none"; document.body.appendChild(el); }
+  let acabou = false, seguranca;
+  const fim = () => {
+    if (acabou) return;
+    acabou = true; clearTimeout(seguranca);
+    el.onended = el.onerror = null; el.pause(); el.style.display = "none";
+    setTimeout(proximoVideo, 300);
+  };
+  try {
+    el.src = await arquivoVideo(v.url);
+    el.muted = MUDO || !v.som;
+    el.onended = fim; el.onerror = fim;
+    el.style.display = "block";
+    seguranca = setTimeout(fim, 3 * 60 * 1000);                         // nenhum vídeo passa de 3 minutos
+    try { await el.play(); } catch (e) { el.muted = true; await el.play(); }   // o programa não deixou tocar com som: toca mudo
+  } catch (e) { fim(); }
+}
+function videoTeste(d) {
+  const a = (d.alertas || []).slice(-1)[0], t = a && textoAlerta(a);
+  raiz.innerHTML = `<div class="video-teste">🎬 Aqui toca o vídeo do momento<small>${t ? esc(t.emo + " " + t.quem + " " + t.oque) : ""}</small>
+    <small>(escolha os vídeos no painel: 📺 Overlays → 🎬 Vídeos)</small></div>`;
 }
 
 // ---------------- Pote de avatares (física com Matter.js) ----------------
@@ -462,7 +579,7 @@ function desenharRecipienteAtras(g) {
   } else if (g.aq) {
     const {cx, cy, R} = g.aq;
     const grad = c.createRadialGradient(cx - R * .3, cy - R * .3, R * .2, cx, cy, R * 1.05);
-    grad.addColorStop(0, "rgba(140,240,255,.10)"); grad.addColorStop(1, "rgba(37,244,238,.22)");
+    grad.addColorStop(0, "rgba(140,240,255,.10)"); grad.addColorStop(1, "rgba(var(--ciano-rgb),.22)");
     c.fillStyle = grad; c.beginPath(); c.arc(cx, cy, R + 10, 0, Math.PI * 2); c.fill();
     c.save(); c.beginPath(); c.arc(cx, cy, R + 10, 0, Math.PI * 2); c.clip();
     c.fillStyle = "rgba(37,180,238,.18)"; c.fillRect(cx - R - 12, cy - R * .35, 2 * R + 24, 2 * R);   // água
@@ -606,10 +723,10 @@ async function atualizar() {
     else {
       d = await (await fetch(API + "/api/overlay", {cache: "no-store"})).json();
       if (d.teste > 0) {                                    // "Testar no OBS / LIVE Studio" clicado no painel
-        if (!emTeste) { emTeste = true; inicioTeste = Date.now(); ultimoAlerta = null; filaAlertas = []; }
+        if (!emTeste) { emTeste = true; inicioTeste = Date.now(); ultimoAlerta = null; filaAlertas = []; filaVideos = []; }
         d = dadosTeste();
       } else if (emTeste) {                                 // acabou o teste: volta aos dados reais do zero
-        if (TIPO === "pote" || TIPO === "alertas") return location.reload();
+        if (TIPO === "pote" || TIPO === "alertas" || TIPO === "videos") return location.reload();
         emTeste = false;
       }
     }
@@ -619,6 +736,7 @@ async function atualizar() {
     else if (TIPO === "metas") desenharMetas(d);
     else if (TIPO === "batalha") desenharBatalha(d);
     else if (TIPO === "alertas") receberAlertas(d.alertas || []);
+    else if (TIPO === "videos") { if (TESTE_FIXO || emTeste) videoTeste(d); else receberVideos(d.alertas || []); }
     else if (TIPO === "pote") { if (window.Matter) poteReceber(d.pote || []); }
     else raiz.innerHTML = `<div class="caixa"><div class="tit">Overlay "${esc(TIPO)}" não existe</div></div>`;
   } catch (e) {
@@ -627,7 +745,7 @@ async function atualizar() {
   }
 }
 atualizar();
-setInterval(atualizar, TIPO === "alertas" ? 700 : 1500);
+setInterval(atualizar, TIPO === "alertas" || TIPO === "videos" ? 700 : 1500);
 </script>
 </body>
 </html>
