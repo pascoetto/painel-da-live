@@ -9,6 +9,8 @@
 <!--
   Overlays para OBS / TikTok LIVE Studio (fonte "Navegador" / "Link"), fundo transparente.
   Endereço:  /overlay/<tipo>?estilo=painel|limpo&top=10&escala=1&titulo=1
+  Tops:      &layout=compacto|lado (quantidade embaixo ou ao lado do nome)  &coroa=0 (tira a coroa do 1º)
+  Teste:     &teste=1 mostra dados de exemplo (para ver o visual antes da live)
   Tipos:     curtidas · presentes · compartilhamentos · metas · batalha · alertas
   metas:     &quais=todas|curtidas|seguidores|diamantes|tiktok
   alertas:   &tipos=seguir,compartilhar,heart,presente,metas,batalha&duracao=5
@@ -54,6 +56,26 @@
   .limpo .nome{font-weight:800;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .limpo .val{font-weight:900;font-size:1.1rem;font-variant-numeric:tabular-nums}
   .limpo .vazio{opacity:.85;font-size:.95rem}
+
+  /* ---------- Tops compactos: quantidade embaixo do nome ---------- */
+  .painel .caixa.compacto{width:17rem;padding:.8rem .85rem .85rem}
+  .limpo .caixa.compacto{width:16rem}
+  .compacto .tit{flex-wrap:wrap;row-gap:.1rem}
+  .compacto .lin{grid-template-columns:1.6rem 2.5rem 1fr;gap:.5rem}
+  .painel .compacto .lin{padding:.32rem .15rem}
+  .info{display:flex;flex-direction:column;min-width:0;line-height:1.15}
+  .compacto .nome{font-size:.98rem}
+  .compacto .val{font-size:.88rem;font-weight:800}
+  .painel .compacto .val{color:var(--ciano)}
+  .painel .compacto .lin:nth-child(1) .val{color:var(--ouro)}
+  .avw{position:relative;display:inline-flex;justify-self:center}
+  .coroa{position:absolute;left:50%;top:-1.05rem;transform:translateX(-50%) rotate(-10deg);font-size:1.25rem;line-height:1;
+    filter:drop-shadow(0 .1rem .15rem rgba(0,0,0,.7));animation:brilha 2.4s ease-in-out infinite}
+  @keyframes brilha{50%{transform:translateX(-50%) rotate(-10deg) translateY(-.12rem)}}
+  .lin.rei{padding-top:1rem!important}
+  .lin.rei .av{border-color:var(--ouro)!important;box-shadow:0 0 .55rem rgba(255,200,61,.75)}
+  .selo-teste{position:fixed;top:.3rem;right:.3rem;z-index:9;background:var(--ouro);color:#2a1d00;font:900 .75rem "TikTok Sans",Arial,sans-serif;
+    padding:.15rem .5rem;border-radius:99px;text-shadow:none!important;letter-spacing:.04em}
 
   .lin.subiu{animation:subiu 1.1s ease-out}
   @keyframes subiu{0%{background:rgba(254,44,85,.45)}100%{background:transparent}}
@@ -130,6 +152,8 @@ let conseguiu = false, falhas = 0;
 const ESTILO = (P.get("estilo") || "painel").toLowerCase() === "limpo" ? "limpo" : "painel";
 const TOP = Math.max(1, Math.min(10, Number(P.get("top")) || 10));
 const TITULO = P.get("titulo") !== "0";
+const LAYOUT = P.get("layout") === "lado" ? "lado" : "compacto";
+const COROA = P.get("coroa") !== "0";
 document.documentElement.style.setProperty("--escala", Math.max(.4, Math.min(3, Number(P.get("escala")) || 1)));
 document.body.className = ESTILO;
 const raiz = document.getElementById("raiz");
@@ -147,11 +171,14 @@ const TOPS = {
 const anteriores = {};
 function desenharTop(d) {
   const t = TOPS[TIPO], lista = (t.lista(d) || []).slice(0, TOP);
-  raiz.innerHTML = `<div class="caixa">${TITULO ? `<div class="tit">${t.tit.replace("Top", "Top " + TOP)}<small>${t.total(d)}</small></div>` : ""}
+  raiz.innerHTML = `<div class="caixa ${LAYOUT}">${TITULO ? `<div class="tit">${t.tit.replace("Top", "Top " + TOP)}<small>${t.total(d)}</small></div>` : ""}
     <div>${lista.length ? lista.map((p, i) => {
       const v = t.val(p), subiu = anteriores[p.handle] !== undefined && v > anteriores[p.handle];
-      return `<div class="lin ${subiu ? "subiu" : ""}"><span class="pos">${i + 1}</span>${avatar(p)}<span class="nome">${esc(p.nome)}</span>
-        <span class="val">${num(v)}<span class="ic">${t.ic}</span></span></div>`;
+      const rei = i === 0 && COROA;
+      const foto = `<span class="avw">${avatar(p)}${rei ? '<span class="coroa">👑</span>' : ""}</span>`;
+      const valor = `<span class="val">${num(v)}<span class="ic">${t.ic}</span></span>`;
+      return `<div class="lin ${subiu ? "subiu" : ""} ${rei ? "rei" : ""}"><span class="pos">${i + 1}</span>${foto}` +
+        (LAYOUT === "compacto" ? `<span class="info"><span class="nome">${esc(p.nome)}</span>${valor}</span>` : `<span class="nome">${esc(p.nome)}</span>${valor}`) + `</div>`;
     }).join("") : `<div class="vazio">Ainda ninguém por aqui… seja o primeiro! ✨</div>`}</div></div>`;
   lista.forEach(p => anteriores[p.handle] = t.val(p));
 }
@@ -527,10 +554,66 @@ if (TIPO === "pote") {
   document.head.appendChild(s);
 }
 
+// ---------------- Teste: dados de exemplo para ver o visual antes da live ----------------
+const TESTE_FIXO = P.get("teste") === "1";
+let emTeste = false, inicioTeste = Date.now();
+const NOMES_TESTE = ["Maria Clara", "João Pedro", "Ana Paula", "Pastor Marcos", "Lúcia Helena", "Carlos Eduardo", "Fernanda", "Rafael", "Juliana", "Tia Rose"];
+function dadosTeste() {
+  const t = (Date.now() - inicioTeste) / 1000, agora = Date.now() / 1000;
+  const lista = (base, ritmo) => NOMES_TESTE.map((nome, i) => ({handle: "teste" + i, nome, foto: "",
+    v: Math.round(base[i] + t * ritmo[i])})).sort((a, b) => b.v - a.v);
+  const cur = lista([980, 860, 900, 640, 520, 480, 300, 260, 180, 90], [9, 14, 6, 11, 4, 8, 3, 5, 2, 7]);
+  const pre = lista([520, 300, 240, 199, 150, 99, 60, 30, 15, 5], [2, 4, 1, 3, 0, 2, 1, 0, 1, 0]);
+  const com = lista([14, 11, 9, 7, 6, 4, 3, 2, 2, 1], [.08, .12, .05, .06, .03, .04, .02, .03, .01, .02]);
+  const soma = l => l.reduce((a, p) => a + p.v, 0);
+  const ciclo = t % 70, fimBat = ciclo >= 60;
+  const nos = Math.round(800 + ciclo * 95), eles = Math.round(1100 + ciclo * 70);
+  const tiposA = ["seguir", "presente", "compartilhar", "heart", "meta", "batalha_inicio"];
+  const nA = Math.floor(t / 3) + 1, alertas = [];
+  for (let k = Math.max(1, nA - 4); k <= nA; k++) {
+    const tipo = tiposA[k % tiposA.length], nome = NOMES_TESTE[k % 10];
+    alertas.push({id: k, tipo, nome, handle: "teste" + (k % 10), qtd: 5, presente: "Rosa", valor: 5000, meta_tipo: "curtidas", adversario: "Irmã Cida"});
+  }
+  const tiposP = ["seguir", "presente", "heart", "compartilhar"], nP = Math.min(45, Math.floor(t / 1.2) + 6), pote = [];
+  for (let k = 0; k < nP; k++)
+    pote.push({handle: "teste" + k, tipo: tiposP[k % 4], nome: NOMES_TESTE[k % 10] + (k >= 10 ? " " + (k + 1) : ""), foto: "",
+               diamantes: k % 4 === 1 ? (k % 3 ? 5 : 150) : 0, t: inicioTeste / 1000 + k * 1.2});
+  return {
+    nome: "Sua live",
+    top_curtidas: cur.map(p => ({...p, total: p.v})), total_curtidas: soma(cur) + 12500,
+    top_presentes: pre.map(p => ({...p, diamantes: p.v})), total_diamantes: soma(pre),
+    top_compart: com.map(p => ({...p, total: p.v})), total_compart: soma(com),
+    metas: [{tipo: "curtidas", valor: 15000}, {tipo: "curtidas", valor: 30000}, {tipo: "seguidores", valor: 1300}, {tipo: "diamantes", valor: 2000}],
+    seguidores_total: 1240 + Math.floor(t / 4),
+    meta_tiktok: {subs: [{presente: "Rosa", icone: "", alvo: 30, progresso: Math.min(30, 12 + Math.floor(t / 3))}], expira: 0},
+    batalha: {status: fimBat ? "fim" : "andamento", restante: Math.max(0, 60 - Math.floor(ciclo)), nos, eles, adversario: "Irmã Cida",
+              resultado: nos > eles ? "vitoria" : "derrota", missao_ativa: ciclo > 40 && !fimBat,
+              ajudantes_nos: [{nome: "Maria Clara", pontos: Math.round(nos * .4)}, {nome: "João Pedro", pontos: Math.round(nos * .25)}, {nome: "Tia Rose", pontos: Math.round(nos * .1)}]},
+    alertas, pote,
+  };
+}
+function seloTeste(ligar) {
+  let el = document.getElementById("selo-teste");
+  if (ligar && !el) { el = document.createElement("div"); el.id = "selo-teste"; el.className = "selo-teste"; el.textContent = "🧪 TESTE"; document.body.appendChild(el); }
+  if (!ligar && el) el.remove();
+}
+
 // ---------------- laço ----------------
 async function atualizar() {
   try {
-    const d = await (await fetch(API + "/api/overlay", {cache: "no-store"})).json();
+    let d;
+    if (TESTE_FIXO) d = dadosTeste();
+    else {
+      d = await (await fetch(API + "/api/overlay", {cache: "no-store"})).json();
+      if (d.teste > 0) {                                    // "Testar no OBS / LIVE Studio" clicado no painel
+        if (!emTeste) { emTeste = true; inicioTeste = Date.now(); ultimoAlerta = null; filaAlertas = []; }
+        d = dadosTeste();
+      } else if (emTeste) {                                 // acabou o teste: volta aos dados reais do zero
+        if (TIPO === "pote" || TIPO === "alertas") return location.reload();
+        emTeste = false;
+      }
+    }
+    seloTeste(emTeste && !TESTE_FIXO);
     conseguiu = true; falhas = 0;
     if (TOPS[TIPO]) desenharTop(d);
     else if (TIPO === "metas") desenharMetas(d);
