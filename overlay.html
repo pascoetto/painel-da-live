@@ -398,7 +398,7 @@ function prioridadeVideo(t) {
   t = String(t || "");
   if (t.startsWith("batalha")) return 0;
   if (t === "meta" || t === "meta_tiktok") return 1;
-  if (t === "presente" || t === "heart") return 2;   // presentes e Heart Me
+  if (t === "presente") return 2;
   return 3;
 }
 // baixa os vídeos escolhidos antes de precisar (até 400 MB no total), para tocarem sem atraso
