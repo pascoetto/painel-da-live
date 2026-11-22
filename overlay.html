@@ -17,7 +17,7 @@
   Pote:      &cai=foto|presente|ambos (nos presentes: foto da pessoa, imagem do presente ou foto com o presente no cantinho)
   Vídeos:    /overlay/videos  (toca o vídeo escolhido para cada momento; &mudo=1 tira o som)
   Tipos:     curtidas · presentes · compartilhamentos · metas · batalha · alertas
-  metas:     &quais=todas|curtidas|seguidores|diamantes|tiktok
+  metas:     &quais=todas|curtidas|seguidores|diamantes|tiktok  &formato=circulo  &direcao=coluna
   alertas:   &tipos=seguir,compartilhar,heart,presente,metas,batalha&duracao=5
 -->
 <style>
@@ -191,6 +191,29 @@
   .mtk img{width:1.4rem;height:1.4rem;object-fit:contain} .mtk .trilho{grid-column:2 / 4;height:.55rem}
   .mtk b{font-variant-numeric:tabular-nums}
 
+  /* metas em círculo: anel com porcentagem, nome e 10/100 (meta do TikTok: o desenho do presente no meio) */
+  .metas.circulos{flex-direction:row;flex-wrap:wrap;justify-content:center;width:auto;max-width:52rem;gap:.7rem}
+  .metas.circulos.coluna{flex-direction:column;flex-wrap:nowrap;align-items:center;max-width:10rem}
+  .meta.circ{width:9.2rem;display:flex;flex-direction:column;align-items:center;text-align:center;gap:.15rem;padding:.8rem .5rem .7rem!important;
+             --cor-anel:var(--rosa)}
+  .meta.circ.seguidores{--cor-anel:var(--ciano)} .meta.circ.diamantes{--cor-anel:var(--roxo)} .meta.circ.tiktok{--cor-anel:var(--ouro)}
+  .meta.circ.ok{--cor-anel:var(--ok)}
+  .neon .meta.circ:not(.ok){--cor-anel:var(--neon)}
+  .anel{position:relative;width:6.6rem;height:6.6rem;margin-bottom:.25rem}
+  .anel svg{width:100%;height:100%;transform:rotate(-90deg);overflow:visible}
+  .anel circle{fill:none;stroke-width:9}
+  .anel .fundo{stroke:rgba(255,255,255,.14)}
+  .fundo-claro .anel .fundo{stroke:rgba(0,0,0,.1)}
+  .anel .arco{stroke:var(--cor-anel);stroke-linecap:round;transition:stroke-dasharray .8s;filter:drop-shadow(0 0 .25rem var(--cor-anel))}
+  .anel .centro{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;
+                font-size:1.55rem;font-weight:900;font-variant-numeric:tabular-nums;line-height:1}
+  .anel .centro img{width:3.3rem;height:3.3rem;object-fit:contain}
+  .anel .centro .emo{font-size:2.6rem}
+  .anel .centro small{font-size:.7rem;font-weight:800;margin-top:.15rem;opacity:.85}
+  .meta.circ .nome{font-weight:900;font-size:.98rem;line-height:1.15;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .meta.circ .qtd{font-weight:800;font-size:.9rem;color:var(--muted);font-variant-numeric:tabular-nums}
+  .meta.circ.ok .qtd{color:var(--ok)}
+
   /* ---------- batalha ---------- */
   .batalha{width:30rem}
   .painel .batalha{background:var(--card);border:2px solid rgba(var(--rosa-rgb),.6);border-radius:1.25rem;padding:.8rem 1rem .9rem;box-shadow:0 .5rem 1.6rem rgba(0,0,0,.35)}
@@ -355,6 +378,33 @@ function blocoTiktok(d) {
       <div class="trilho"><div class="enche" style="width:${pct}%;${ok ? "background:var(--ok)" : ""}"></div></div></div>`;
   }).join("")}</div>`;
 }
+const CIRCULO = P.get("formato") === "circulo", COLUNA = P.get("direcao") === "coluna";
+function anelMeta(classe, pct, centro, nome, qtd) {
+  const p = Math.max(0, Math.min(100, pct));
+  return `<div class="meta circ ${classe}"><div class="anel"><svg viewBox="0 0 100 100"><circle class="fundo" cx="50" cy="50" r="42"/>
+    <circle class="arco" cx="50" cy="50" r="42" pathLength="100" stroke-dasharray="${p < 0.5 ? "0.01" : p} 100" ${p < 0.5 ? 'style="opacity:0"' : ""}/></svg>
+    <div class="centro">${centro}</div></div><div class="nome">${nome}</div><div class="qtd">${qtd}</div></div>`;
+}
+const NOME_META = {curtidas: "Curtidas", seguidores: "Seguidores", diamantes: "Presentes"};
+function circuloMeta(tipo, metas, d) {
+  const [emo, , tot] = INFO_META[tipo], total = tot(d);
+  if (!metas.length || total == null) return "";
+  const prox = metas.find(m => !m.batida && m.valor > total);
+  const alvo = prox ? prox.valor : metas[metas.length - 1].valor;
+  const pct = prox ? total / Math.max(1, alvo) * 100 : 100;
+  return anelMeta(`${tipo} ${prox ? "" : "ok"}`, pct, prox ? `${Math.floor(pct)}%` : "✓",
+    `${emo} ${NOME_META[tipo]}`, prox ? `${num(total)}/${num(alvo)}` : `${num(total)} 🎉`);
+}
+function circulosTiktok(d) {
+  const mt = d.meta_tiktok;
+  if (!mt || !(mt.subs || []).length) return "";
+  if (mt.expira && mt.expira < Date.now() / 1000 - 600) return "";
+  return mt.subs.map(s => {
+    const ok = s.alvo && s.progresso >= s.alvo, pct = s.alvo ? s.progresso / s.alvo * 100 : 0;
+    const img = s.icone ? `<img src="${esc(s.icone)}" referrerpolicy="no-referrer" onerror="this.outerHTML='<span class=emo>🎁</span>'">` : `<span class="emo">🎁</span>`;
+    return anelMeta(`tiktok ${ok ? "ok" : ""}`, pct, img, esc(s.presente || "Presente"), `${ok ? "✓ " : ""}${num(s.progresso)}/${num(s.alvo)}`);
+  }).join("");
+}
 let metasBatidasAntes = null;
 function desenharMetas(d) {
   const ms = (d.metas || []).slice().sort((a, b) => a.valor - b.valor), por = t => ms.filter(m => (m.tipo || "curtidas") === t);
@@ -365,6 +415,10 @@ function desenharMetas(d) {
   if (metasBatidasAntes !== null && batidas > metasBatidasAntes) soltarConfete();
   metasBatidasAntes = batidas;
   const quer = t => QUAIS === "todas" || QUAIS.split(",").includes(t);
+  if (CIRCULO) {
+    raiz.innerHTML = `<div class="metas circulos ${COLUNA ? "coluna" : ""}">${["curtidas", "seguidores", "diamantes"].filter(quer).map(t => circuloMeta(t, por(t), d)).join("")}${quer("tiktok") ? circulosTiktok(d) : ""}</div>`;
+    return;
+  }
   raiz.innerHTML = `<div class="metas">${["curtidas", "seguidores", "diamantes"].filter(quer).map(t => blocoMeta(t, por(t), d)).join("")}${quer("tiktok") ? blocoTiktok(d) : ""}</div>`;
 }
 
@@ -883,7 +937,8 @@ function dadosTeste() {
     // a meta de 18.300 curtidas é batida uns 9 segundos depois de começar o teste (para ver o confete)
     metas: [{tipo: "curtidas", valor: 15000}, {tipo: "curtidas", valor: 18300}, {tipo: "curtidas", valor: 30000}, {tipo: "seguidores", valor: 1300}, {tipo: "diamantes", valor: 2000}],
     seguidores_total: 1240 + Math.floor(t / 4),
-    meta_tiktok: {subs: [{presente: "Rosa", icone: "", alvo: 30, progresso: Math.min(30, 12 + Math.floor(t / 3))}], expira: 0},
+    meta_tiktok: {subs: [{presente: "Rosa", icone: "", alvo: 30, progresso: Math.min(30, 12 + Math.floor(t / 3))},
+                         {presente: "Coração", icone: "", alvo: 10, progresso: Math.min(10, 3 + Math.floor(t / 6))}], expira: 0},
     batalha: {status: fimBat ? "fim" : "andamento", restante: Math.max(0, 60 - Math.floor(ciclo)), nos, eles, adversario: "Irmã Cida",
               resultado: nos > eles ? "vitoria" : "derrota", missao_ativa: ciclo > 40 && !fimBat,
               ajudantes_nos: [{nome: "Maria Clara", pontos: Math.round(nos * .4)}, {nome: "João Pedro", pontos: Math.round(nos * .25)}, {nome: "Tia Rose", pontos: Math.round(nos * .1)}]},
