@@ -708,6 +708,21 @@ function poteReceber(lista) {
 }
 setInterval(() => { if (pote && !pote.esvaziando && pote.fila.length) soltarNoPote(pote.fila.shift(), false); }, 380);
 
+// ---------- Neon no pote (visual "✨ Neon"): contorno do pote/aquário/chão e aro das fotos brilhando ----------
+let corDestaqueCache = null;
+function corNeon(atraso) {
+  if (!NEON) return null;
+  if (NEON_COR === "trocando") return `hsl(${(330 + ((Date.now() / 1000 + (atraso || 0)) % 4) / 4 * 360) % 360} 100% 62%)`;
+  if (!corDestaqueCache) corDestaqueCache = getComputedStyle(document.documentElement).getPropertyValue("--rosa").trim() || "#fe2c55";
+  return corDestaqueCache;
+}
+function contornoNeon(c, desenhar, larg) {   // desenha o traço 2 vezes: brilho largo + linha viva
+  const cor = corNeon(0);
+  c.save(); c.strokeStyle = cor; c.shadowColor = cor;
+  c.lineWidth = larg + 3; c.globalAlpha = .45; c.shadowBlur = 26; desenhar();
+  c.lineWidth = larg; c.globalAlpha = 1; c.shadowBlur = 12; desenhar();
+  c.restore();
+}
 function desenharRecipienteAtras(g) {
   const c = g.ctx;
   if (g.jar) {
@@ -721,7 +736,7 @@ function desenharRecipienteAtras(g) {
   } else if (g.aq) {
     const {cx, cy, R} = g.aq;
     const grad = c.createRadialGradient(cx - R * .3, cy - R * .3, R * .2, cx, cy, R * 1.05);
-    grad.addColorStop(0, "rgba(140,240,255,.10)"); grad.addColorStop(1, "rgba(var(--ciano-rgb),.22)");
+    grad.addColorStop(0, "rgba(140,240,255,.10)"); grad.addColorStop(1, "rgba(37,244,238,.22)");
     c.fillStyle = grad; c.beginPath(); c.arc(cx, cy, R + 10, 0, Math.PI * 2); c.fill();
     c.save(); c.beginPath(); c.arc(cx, cy, R + 10, 0, Math.PI * 2); c.clip();
     c.fillStyle = "rgba(37,180,238,.18)"; c.fillRect(cx - R - 12, cy - R * .35, 2 * R + 24, 2 * R);   // água
@@ -736,6 +751,19 @@ function desenharRecipienteAtras(g) {
 }
 function desenharRecipienteFrente(g) {
   const c = g.ctx;
+  if (NEON) {
+    if (g.jar) {
+      const j = g.jar;
+      contornoNeon(c, () => { caminhoPote(c, j); c.stroke(); }, 4);
+      contornoNeon(c, () => { c.beginPath(); c.ellipse(j.cx, j.topo + 3, j.nw, j.jh * .03, 0, 0, Math.PI); c.stroke(); }, 3);
+    } else if (g.aq) {
+      const {cx, cy, R} = g.aq;
+      contornoNeon(c, () => { c.beginPath(); c.arc(cx, cy, R + 10, -50 * Math.PI / 180, 230 * Math.PI / 180); c.stroke(); }, 5);
+    } else {
+      contornoNeon(c, () => { c.beginPath(); c.moveTo(8, g.H - 4); c.lineTo(g.W - 8, g.H - 4); c.stroke(); }, 4);   // chão
+    }
+    return;
+  }
   c.lineWidth = 6; c.strokeStyle = "rgba(255,255,255,.75)"; c.shadowColor = "rgba(0,0,0,.45)"; c.shadowBlur = 8;
   if (g.jar) {
     const j = g.jar;
@@ -781,10 +809,11 @@ function desenharPote() {
     const b = d.body, {x, y} = b.position;
     if (d.saindo) { d.alpha -= .02; if (d.alpha <= 0) { Matter.Composite.remove(g.engine.world, b); g.corpos.delete(chave); continue; } }
     if (y > g.H + 300) { Matter.Composite.remove(g.engine.world, b); g.corpos.delete(chave); continue; }
-    const r = d.r, cor = COR_TIPO[d.item.tipo] || "#fff";
+    const r = d.r, neon = corNeon((d.body.id % 10) * .4), cor = neon || COR_TIPO[d.item.tipo] || "#fff";
     const soPresente = d.item.tipo === "presente" && PT.cai === "presente";
     c.save(); c.globalAlpha = d.alpha; c.translate(x, y); c.rotate(b.angle);
     if (d.k >= 1.7) { c.shadowColor = "#ffc83d"; c.shadowBlur = 18; }
+    else if (neon) { c.shadowColor = neon; c.shadowBlur = 14; }
     if (soPresente) {
       desenharPresente(c, d, r); c.shadowBlur = 0; c.restore();
     } else {
