@@ -59,12 +59,26 @@
     box-shadow:0 0 .45rem var(--cor-lin, var(--neon)),0 0 1.1rem var(--cor-lin, var(--neon)),inset 0 0 .5rem var(--cor-lin, var(--neon));
     z-index:-1;pointer-events:none}
   .neon .lin.rei{padding-top:.9rem!important;margin-top:1.1rem}
-  /* número da posição em hexágono */
-  .neon .pos{width:1.85rem;height:2.05rem;border-radius:0;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);
-    background:linear-gradient(#5a5a6a,#2e2e3a);color:#fff;text-shadow:none}
-  .neon .lin:nth-child(1) .pos{background:linear-gradient(#ffe27a,#f5a300);color:#3a2600}
-  .neon .lin:nth-child(2) .pos{background:linear-gradient(#ffffff,#b9b9c4);color:#222}
-  .neon .lin:nth-child(3) .pos{background:linear-gradient(#ffb27a,#d0622b);color:#2b1300}
+  /* número da posição: 4 formatos próprios (&numero=medalha|losango|escudo|placar) */
+  .neon .pos{--pos-cor:#3a3a4a;--pos-cor2:#1f1f29;--pos-txt:#fff;color:var(--pos-txt);text-shadow:none;font-weight:900;position:relative}
+  .neon .lin:nth-child(1) .pos{--pos-cor:#ffe27a;--pos-cor2:#e89400;--pos-txt:#3a2600;--pos-brilho:#ffc83d}
+  .neon .lin:nth-child(2) .pos{--pos-cor:#ffffff;--pos-cor2:#a9b1bf;--pos-txt:#222;--pos-brilho:#e8eef6}
+  .neon .lin:nth-child(3) .pos{--pos-cor:#ffc08a;--pos-cor2:#c9561f;--pos-txt:#2b1300;--pos-brilho:#ff8a3d}
+  /* MEDALHA: moeda com aro e fitinha */
+  .num-medalha .pos{width:1.9rem;height:1.9rem;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--pos-cor),var(--pos-cor2));
+    box-shadow:inset 0 0 0 .14rem rgba(255,255,255,.45),0 .1rem .3rem rgba(0,0,0,.5);margin-bottom:.35rem}
+  .num-medalha .pos::after{content:"";position:absolute;left:50%;bottom:-.5rem;width:1rem;height:.62rem;transform:translateX(-50%);z-index:-1;
+    background:var(--cor-lin, var(--neon));clip-path:polygon(0 0,100% 0,100% 100%,50% 62%,0 100%)}
+  /* LOSANGO: quadrado em pé, como um diamante */
+  .num-losango .pos{width:2.15rem;height:2.15rem;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);
+    background:linear-gradient(160deg,var(--pos-cor),var(--pos-cor2))}
+  /* ESCUDO: brasão com a ponta para baixo */
+  .num-escudo .pos{width:1.85rem;height:2.1rem;clip-path:polygon(0 0,100% 0,100% 58%,50% 100%,0 58%);border-radius:.25rem .25rem 0 0;
+    background:linear-gradient(180deg,var(--pos-cor),var(--pos-cor2));padding-bottom:.25rem}
+  /* PLACAR: só o número grande, em neon, sem forma em volta */
+  .num-placar .pos{background:none;width:auto;height:auto;font-size:1.55rem;font-style:italic;letter-spacing:-.05em;
+    color:var(--pos-brilho, #fff);text-shadow:0 0 .35rem var(--pos-brilho, var(--neon)),0 0 .8rem var(--pos-brilho, var(--neon))!important}
+  .num-placar .pos::after{content:"º";font-size:.55em;vertical-align:super}
   .neon .av{border:.14rem solid var(--cor-lin, var(--neon))!important;box-shadow:0 0 .45rem var(--cor-lin, var(--neon))}
   .neon .lin.rei .av{border-color:var(--ouro)!important}
   .neon .meta, .neon .batalha, .neon .alerta{border:.16rem solid var(--neon)!important;box-shadow:0 0 .5rem var(--neon),0 0 1.2rem var(--neon)!important}
@@ -235,7 +249,8 @@ const LAYOUT = P.get("layout") === "lado" ? "lado" : "compacto";
 const COROA = P.get("coroa") !== "0";
 document.documentElement.style.setProperty("--escala", Math.max(.4, Math.min(3, Number(P.get("escala")) || 1)));
 document.body.className = ESTILO;
-if (NEON) document.body.classList.add("neon", "neon-" + NEON_COR);
+if (NEON) document.body.classList.add("neon", "neon-" + NEON_COR,
+  "num-" + (["losango", "escudo", "placar"].includes(P.get("numero")) ? P.get("numero") : "medalha"));
 // ---------------- cores e efeitos ----------------
 (function aplicarCores() {
   const css = document.documentElement.style, hex = v => /^[0-9a-f]{6}$/i.test(v || "") ? "#" + v : "";
