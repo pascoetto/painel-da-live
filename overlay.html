@@ -48,6 +48,51 @@
   .painel .val{font-weight:900;font-size:1.05rem;font-variant-numeric:tabular-nums}
   .painel .vazio{color:var(--muted);font-size:.95rem;padding:.4rem .2rem}
 
+  /* ---------- estilo NEON (cada pessoa num cartão com borda neon; cores trocando) ---------- */
+  /* usa o estilo PAINEL como base (body com as duas classes) e muda o que precisa */
+  .neon{--neon:#ff2d95}
+  .neon .caixa{background:transparent;border:0;box-shadow:none;backdrop-filter:none;padding:.3rem .45rem}
+  .neon .tit{padding:0 .2rem}
+  .neon .lin{position:relative;border:0!important;margin:.55rem 0;padding:.5rem .7rem!important;border-radius:.9rem;
+    background:rgba(10,10,22,.8);isolation:isolate}
+  .neon .lin::before{content:"";position:absolute;inset:0;border-radius:inherit;border:.16rem solid var(--cor-lin, var(--neon));
+    box-shadow:0 0 .45rem var(--cor-lin, var(--neon)),0 0 1.1rem var(--cor-lin, var(--neon)),inset 0 0 .5rem var(--cor-lin, var(--neon));
+    z-index:-1;pointer-events:none}
+  .neon .lin.rei{padding-top:.9rem!important;margin-top:1.1rem}
+  /* número da posição em hexágono */
+  .neon .pos{width:1.85rem;height:2.05rem;border-radius:0;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);
+    background:linear-gradient(#5a5a6a,#2e2e3a);color:#fff;text-shadow:none}
+  .neon .lin:nth-child(1) .pos{background:linear-gradient(#ffe27a,#f5a300);color:#3a2600}
+  .neon .lin:nth-child(2) .pos{background:linear-gradient(#ffffff,#b9b9c4);color:#222}
+  .neon .lin:nth-child(3) .pos{background:linear-gradient(#ffb27a,#d0622b);color:#2b1300}
+  .neon .av{border:.14rem solid var(--cor-lin, var(--neon))!important;box-shadow:0 0 .45rem var(--cor-lin, var(--neon))}
+  .neon .lin.rei .av{border-color:var(--ouro)!important}
+  .neon .meta, .neon .batalha, .neon .alerta{border:.16rem solid var(--neon)!important;box-shadow:0 0 .5rem var(--neon),0 0 1.2rem var(--neon)!important}
+  /* cores trocando: só a cor do neon gira pelo arco-íris (fotos e textos não mudam); cada linha um pouco atrasada */
+  @property --neon-h{syntax:"<number>";inherits:true;initial-value:330}
+  .neon-trocando .lin, .neon-trocando .meta, .neon-trocando .batalha, .neon-trocando .alerta{
+    --neon:hsl(var(--neon-h) 100% 62%);animation:neonGira 4s linear infinite;animation-delay:calc(var(--fase4, 0s) - var(--atraso, 0s))}
+  @keyframes neonGira{to{--neon-h:690}}
+  .neon-trocando .alerta{animation:entra .55s cubic-bezier(.2,1.4,.4,1) both, neonGira 4s linear infinite;animation-delay:0s, var(--fase4, 0s)}
+  /* no neon, quando o número sobe: só o número dá um pulinho (a linha não pisca) */
+  .neon-trocando .lin.subiu{animation:neonGira 4s linear infinite;animation-delay:calc(var(--fase4, 0s) - var(--atraso, 0s))}
+  .neon-podio .lin.subiu, .neon-unica .lin.subiu{animation:none}
+  .neon .lin.subiu .val{animation:pulaVal .7s ease-out}
+  @keyframes pulaVal{40%{transform:scale(1.25)}}
+  .neon-trocando .lin:nth-child(2){--atraso:0.4s}
+  .neon-trocando .lin:nth-child(3){--atraso:0.8s}
+  .neon-trocando .lin:nth-child(4){--atraso:1.2s}
+  .neon-trocando .lin:nth-child(5){--atraso:1.6s}
+  .neon-trocando .lin:nth-child(6){--atraso:2.0s}
+  .neon-trocando .lin:nth-child(7){--atraso:2.4s}
+  .neon-trocando .lin:nth-child(8){--atraso:2.8s}
+  .neon-trocando .lin:nth-child(9){--atraso:3.2s}
+  .neon-trocando .lin:nth-child(10){--atraso:3.6s}
+  /* pódio: ouro, prata, bronze e o resto na cor de destaque */
+  .neon-podio .lin:nth-child(1){--cor-lin:#ffc83d} .neon-podio .lin:nth-child(2){--cor-lin:#e8eef6} .neon-podio .lin:nth-child(3){--cor-lin:#ff8a3d}
+  .neon-podio .lin{--cor-lin:var(--rosa)}
+  .neon-unica{--neon:var(--rosa)}
+
   /* ---------- estilo LIMPO (só texto com sombra, direto sobre o vídeo) ---------- */
   .limpo .caixa{width:23rem}
   .limpo, .limpo *{text-shadow:0 0 .25rem #000,0 .1rem .35rem rgba(0,0,0,.9),0 0 .1rem #000}
@@ -75,7 +120,7 @@
   .painel .compacto .lin:nth-child(1) .val{color:var(--ouro)}
   .avw{position:relative;display:inline-flex;justify-self:center}
   .coroa{position:absolute;left:50%;top:-1.05rem;transform:translateX(-50%) rotate(-10deg);font-size:1.25rem;line-height:1;
-    filter:drop-shadow(0 .1rem .15rem rgba(0,0,0,.7));animation:brilha 2.4s ease-in-out infinite}
+    filter:drop-shadow(0 .1rem .15rem rgba(0,0,0,.7));animation:brilha 2.4s ease-in-out infinite;animation-delay:var(--fase24, 0s)}
   @keyframes brilha{50%{transform:translateX(-50%) rotate(-10deg) translateY(-.12rem)}}
   .lin.rei{padding-top:1rem!important}
   .lin.rei .av{border-color:var(--ouro)!important;box-shadow:0 0 .55rem rgba(255,200,61,.75)}
@@ -92,11 +137,12 @@
   .fundo-claro .pos{background:rgba(0,0,0,.08)}
   .fundo-claro .compacto .lin:nth-child(1) .val{color:#a86b00}
   .fundo-claro .trilho{background:rgba(0,0,0,.1);border-color:rgba(0,0,0,.12)}
-  .anim-pulsar .lin.rei .av{animation:pulsa1 1.6s ease-in-out infinite}
+  .anim-pulsar .lin.rei .av{animation:pulsa1 1.6s ease-in-out infinite;animation-delay:var(--fase16, 0s)}
   @keyframes pulsa1{50%{transform:scale(1.12);box-shadow:0 0 .9rem var(--ouro)}}
   .anim-brilho .enche, .anim-brilho .bt-cabo .a, .anim-brilho .bt-br span{position:relative;overflow:hidden}
   .anim-brilho .enche::after, .anim-brilho .bt-cabo .a::after, .anim-brilho .bt-br span::after{content:"";position:absolute;inset:0;
-    background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.65) 50%,transparent 80%);transform:translateX(-100%);animation:corre 2.2s ease-in-out infinite}
+    background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.65) 50%,transparent 80%);transform:translateX(-100%);animation:corre 2.2s ease-in-out infinite;
+    animation-delay:var(--fase22, 0s)}
   @keyframes corre{60%,100%{transform:translateX(100%)}}
   .confete{position:fixed;top:-2rem;width:.6rem;height:1rem;border-radius:.15rem;z-index:20;pointer-events:none;animation:cai linear forwards}
   @keyframes cai{to{transform:translateY(110vh) rotate(720deg);opacity:.9}}
@@ -179,13 +225,17 @@ const TIPO = (P.get("tipo") || location.pathname.split("/")[2] || "curtidas").to
 // Aberta pelo GitHub Pages (https, para o TikTok LIVE Studio): busca os dados no painel aberto neste computador.
 const API = location.protocol === "https:" || P.get("porta") ? `http://127.0.0.1:${Number(P.get("porta")) || 8765}` : "";
 let conseguiu = false, falhas = 0;
-const ESTILO = (P.get("estilo") || "painel").toLowerCase() === "limpo" ? "limpo" : "painel";
+const ESTILO_PEDIDO = (P.get("estilo") || "painel").toLowerCase();
+const ESTILO = ESTILO_PEDIDO === "limpo" ? "limpo" : "painel";       // o neon usa o "painel" como base
+const NEON = ESTILO_PEDIDO === "neon";
+const NEON_COR = ["podio", "unica"].includes(P.get("neon")) ? P.get("neon") : "trocando";
 const TOP = Math.max(1, Math.min(10, Number(P.get("top")) || 10));
 const TITULO = P.get("titulo") !== "0";
 const LAYOUT = P.get("layout") === "lado" ? "lado" : "compacto";
 const COROA = P.get("coroa") !== "0";
 document.documentElement.style.setProperty("--escala", Math.max(.4, Math.min(3, Number(P.get("escala")) || 1)));
 document.body.className = ESTILO;
+if (NEON) document.body.classList.add("neon", "neon-" + NEON_COR);
 // ---------------- cores e efeitos ----------------
 (function aplicarCores() {
   const css = document.documentElement.style, hex = v => /^[0-9a-f]{6}$/i.test(v || "") ? "#" + v : "";
@@ -398,7 +448,7 @@ function prioridadeVideo(t) {
   t = String(t || "");
   if (t.startsWith("batalha")) return 0;
   if (t === "meta" || t === "meta_tiktok") return 1;
-  if (t === "presente") return 2;
+  if (t === "presente" || t === "heart") return 2;   // presentes e Heart Me
   return 3;
 }
 // baixa os vídeos escolhidos antes de precisar (até 400 MB no total), para tocarem sem atraso
@@ -833,6 +883,10 @@ async function atualizar() {
       }
     }
     seloTeste(emTeste && !TESTE_FIXO);
+    // o overlay é redesenhado a cada atualização: as animações contínuas recomeçam "no ponto certo" (sem pular)
+    const agoraMs = Date.now(), raizCss = document.body.style;
+    [[4000, "--fase4"], [1600, "--fase16"], [2200, "--fase22"], [2400, "--fase24"]]
+      .forEach(([per, nome]) => raizCss.setProperty(nome, -(agoraMs % per) / 1000 + "s"));
     conseguiu = true; falhas = 0;
     if (TOPS[TIPO]) desenharTop(d);
     else if (TIPO === "metas") desenharMetas(d);
