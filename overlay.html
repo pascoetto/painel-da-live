@@ -385,9 +385,34 @@ function receberVideos(lista) {
   for (const a of lista) {
     if (a.id <= ultimoVideo) continue;
     ultimoVideo = a.id;
-    if (a.video && filaVideos.length < 20) filaVideos.push(a.video);
+    if (a.video && filaVideos.length < 20) {
+      // presentes, metas e batalha passam na frente de seguidor, compartilhamento etc.
+      const p = prioridadeVideo(a.tipo), v = {...a.video, p};
+      const pos = filaVideos.findIndex(x => x.p > p);
+      filaVideos.splice(pos < 0 ? filaVideos.length : pos, 0, v);
+    }
   }
   if (!tocandoVideo) proximoVideo();
+}
+function prioridadeVideo(t) {
+  t = String(t || "");
+  if (t.startsWith("batalha")) return 0;
+  if (t === "meta" || t === "meta_tiktok") return 1;
+  if (t === "presente") return 2;
+  return 3;
+}
+// baixa os vídeos escolhidos antes de precisar (até 400 MB no total), para tocarem sem atraso
+let preCarregando = false;
+async function preCarregarVideos(lista) {
+  if (preCarregando || !Array.isArray(lista)) return;
+  preCarregando = true;
+  let total = 0;
+  for (const v of lista) {
+    if (blobsVideo[v.url]) { total += v.mb || 0; continue; }
+    if (total + (v.mb || 0) > 400) continue;
+    try { await arquivoVideo(v.url); total += v.mb || 0; } catch (e) {}
+  }
+  preCarregando = false;
 }
 async function arquivoVideo(u) {
   // baixa pelo mesmo caminho dos dados (assim funciona também na página do GitHub, no LIVE Studio)
@@ -445,10 +470,22 @@ function carregarIcone(dado) {
   dado.ic = new Image(); dado.ic.referrerPolicy = "no-referrer";
   dado.ic.onload = () => dado.icOk = true; dado.ic.src = u;
 }
-function desenharPresente(c, d, r) {   // a imagem do presente (ou 🎁) dentro de um círculo claro
-  c.beginPath(); c.arc(0, 0, r, 0, Math.PI * 2); c.fillStyle = "rgba(255,255,255,.92)"; c.fill();
-  if (d.icOk) c.drawImage(d.ic, -r * .78, -r * .78, r * 1.56, r * 1.56);
-  else { c.font = `${r * 1.15}px Arial`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("🎁", 0, r * .08); }
+function desenharPresente(c, d, r) {   // só a imagem do presente (ou 🎁), sem bolinha em volta
+  c.save();
+  c.shadowColor = "rgba(0,0,0,.55)"; c.shadowBlur = r * .25; c.shadowOffsetY = r * .06;
+  if (d.icOk) c.drawImage(d.ic, -r * 1.05, -r * 1.05, r * 2.1, r * 2.1);
+  else { c.font = `${r * 1.7}px Arial`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("🎁", 0, r * .1); }
+  c.restore();
+}
+// Quem escolheu "cair o presente": cada presente enviado cai separado (um combo conta como um).
+function listaDoPote(d) {
+  const lista = d.pote || [];
+  if (PT.cai === "foto" || !Array.isArray(d.pote_envios)) return lista;
+  const fotos = {};
+  lista.forEach(i => { if (i.foto) fotos[i.handle] = i.foto; });
+  return lista.filter(i => i.tipo !== "presente").concat(d.pote_envios.map(e => ({
+    handle: "envio" + e.id, tipo: "presente", nome: e.nome, foto: fotos[e.handle] || "", icone: e.icone,
+    diamantes: e.diamantes, t: e.t})));
 }
 const COR_TIPO = {seguir: "#fe2c55", heart: "#ff7aa2", presente: "#ffc83d", compartilhar: "#25f4ee"};
 let pote = null;   // {engine, W, H, paredes, fundo, corpos: Map(id -> {body, ...}), vistos, fila, esvaziando}
@@ -801,8 +838,11 @@ async function atualizar() {
     else if (TIPO === "metas") desenharMetas(d);
     else if (TIPO === "batalha") desenharBatalha(d);
     else if (TIPO === "alertas") receberAlertas(d.alertas || []);
-    else if (TIPO === "videos") { if (TESTE_FIXO || emTeste) videoTeste(d); else receberVideos(d.alertas || []); }
-    else if (TIPO === "pote") { if (window.Matter) poteReceber(d.pote || []); }
+    else if (TIPO === "videos") {
+      if (TESTE_FIXO || emTeste) videoTeste(d);
+      else { receberVideos(d.alertas || []); preCarregarVideos(d.videos_pre); }
+    }
+    else if (TIPO === "pote") { if (window.Matter) poteReceber(listaDoPote(d)); }
     else raiz.innerHTML = `<div class="caixa"><div class="tit">Overlay "${esc(TIPO)}" não existe</div></div>`;
   } catch (e) {
     // painel fechado ou bloqueado: mostra um aviso pequeno só se nunca conseguiu (ajuda a configurar)
