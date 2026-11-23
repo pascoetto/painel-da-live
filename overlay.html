@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<title>Painel da Live · Overlay</title>
+<title>XLiv · Overlay</title>
 <link rel="icon" type="image/png" href="/icone.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=TikTok+Sans:wght@500..900&display=swap" rel="stylesheet">
@@ -1002,7 +1002,7 @@ async function atualizar() {
     else raiz.innerHTML = `<div class="caixa"><div class="tit">Overlay "${esc(TIPO)}" não existe</div></div>`;
   } catch (e) {
     // painel fechado ou bloqueado: mostra um aviso pequeno só se nunca conseguiu (ajuda a configurar)
-    if (!conseguiu && ++falhas >= 4) raiz.innerHTML = `<div class="caixa"><div class="tit" style="font-size:.95rem">⚠️ Abra o Painel da Live neste computador</div></div>`;
+    if (!conseguiu && ++falhas >= 4) raiz.innerHTML = `<div class="caixa"><div class="tit" style="font-size:.95rem">⚠️ Abra o XLiv neste computador</div></div>`;
   }
 }
 atualizar();
