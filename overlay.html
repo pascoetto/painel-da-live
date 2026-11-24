@@ -55,34 +55,35 @@
   .neon .caixa{background:transparent;border:0;box-shadow:none;backdrop-filter:none;padding:.3rem .45rem}
   .neon .tit{padding:0 .2rem}
   .neon .lin{position:relative;border:0!important;margin:.55rem 0;padding:.5rem .7rem!important;border-radius:.9rem;
-    background:rgba(10,10,22,.8);isolation:isolate}
+    background:var(--card-neon, rgba(10,10,22,.8));isolation:isolate}
   .neon .lin::before{content:"";position:absolute;inset:0;border-radius:inherit;border:.16rem solid var(--cor-lin, var(--neon));
     box-shadow:0 0 .45rem var(--cor-lin, var(--neon)),0 0 1.1rem var(--cor-lin, var(--neon)),inset 0 0 .5rem var(--cor-lin, var(--neon));
     z-index:-1;pointer-events:none}
   .neon .lin.rei{padding-top:.9rem!important;margin-top:1.1rem}
   /* número da posição: &numero=medalha|losango|escudo|placar|hexagono */
-  .neon .pos{--pos-cor:#3a3a4a;--pos-cor2:#1f1f29;--pos-txt:#fff;color:var(--pos-txt);text-shadow:none;font-weight:900;position:relative}
-  .neon .lin:nth-child(1) .pos{--pos-cor:#ffe27a;--pos-cor2:#e89400;--pos-txt:#3a2600;--pos-brilho:#ffc83d}
-  .neon .lin:nth-child(2) .pos{--pos-cor:#ffffff;--pos-cor2:#a9b1bf;--pos-txt:#222;--pos-brilho:#e8eef6}
-  .neon .lin:nth-child(3) .pos{--pos-cor:#ffc08a;--pos-cor2:#c9561f;--pos-txt:#2b1300;--pos-brilho:#ff8a3d}
+  body.numfmt .lin .pos{--pos-cor:#3a3a4a;--pos-cor2:#1f1f29;--pos-txt:#fff;color:var(--pos-txt);text-shadow:none;font-weight:900;position:relative;
+    display:flex;align-items:center;justify-content:center;font-size:.95rem;isolation:isolate}
+  body.numfmt .lin:nth-child(1) .pos{--pos-cor:#ffe27a;--pos-cor2:#e89400;--pos-txt:#3a2600;--pos-brilho:#ffc83d}
+  body.numfmt .lin:nth-child(2) .pos{--pos-cor:#ffffff;--pos-cor2:#a9b1bf;--pos-txt:#222;--pos-brilho:#e8eef6}
+  body.numfmt .lin:nth-child(3) .pos{--pos-cor:#ffc08a;--pos-cor2:#c9561f;--pos-txt:#2b1300;--pos-brilho:#ff8a3d}
   /* MEDALHA: moeda com aro e fitinha */
-  .num-medalha .pos{width:1.9rem;height:1.9rem;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--pos-cor),var(--pos-cor2));
+  body.numfmt.num-medalha .lin .pos{width:1.9rem;height:1.9rem;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--pos-cor),var(--pos-cor2));
     box-shadow:inset 0 0 0 .14rem rgba(255,255,255,.45),0 .1rem .3rem rgba(0,0,0,.5);margin-bottom:.35rem}
-  .num-medalha .pos::after{content:"";position:absolute;left:50%;bottom:-.5rem;width:1rem;height:.62rem;transform:translateX(-50%);z-index:-1;
+  body.numfmt.num-medalha .lin .pos::after{content:"";position:absolute;left:50%;bottom:-.5rem;width:1rem;height:.62rem;transform:translateX(-50%);z-index:-1;
     background:var(--cor-lin, var(--neon));clip-path:polygon(0 0,100% 0,100% 100%,50% 62%,0 100%)}
   /* LOSANGO: quadrado em pé, como um diamante */
-  .num-losango .pos{width:2.15rem;height:2.15rem;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);
+  body.numfmt.num-losango .lin .pos{width:2.15rem;height:2.15rem;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);
     background:linear-gradient(160deg,var(--pos-cor),var(--pos-cor2))}
   /* ESCUDO: brasão com a ponta para baixo */
-  .num-escudo .pos{width:1.85rem;height:2.1rem;clip-path:polygon(0 0,100% 0,100% 58%,50% 100%,0 58%);border-radius:.25rem .25rem 0 0;
+  body.numfmt.num-escudo .lin .pos{width:1.85rem;height:2.1rem;clip-path:polygon(0 0,100% 0,100% 58%,50% 100%,0 58%);border-radius:.25rem .25rem 0 0;
     background:linear-gradient(180deg,var(--pos-cor),var(--pos-cor2));padding-bottom:.25rem}
   /* HEXÁGONO */
-  .num-hexagono .pos{width:1.85rem;height:2.05rem;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);
+  body.numfmt.num-hexagono .lin .pos{width:1.85rem;height:2.05rem;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);
     background:linear-gradient(var(--pos-cor),var(--pos-cor2))}
   /* PLACAR: só o número grande, em neon, sem forma em volta */
-  .num-placar .pos{background:none;width:auto;height:auto;font-size:1.55rem;font-style:italic;letter-spacing:-.05em;
+  body.numfmt.num-placar .lin .pos{background:none;width:auto;height:auto;font-size:1.55rem;font-style:italic;letter-spacing:-.05em;
     color:var(--pos-brilho, #fff);text-shadow:0 0 .35rem var(--pos-brilho, var(--neon)),0 0 .8rem var(--pos-brilho, var(--neon))!important}
-  .num-placar .pos::after{content:"º";font-size:.55em;vertical-align:super}
+  body.numfmt.num-placar .lin .pos::after{content:"º";font-size:.55em;vertical-align:super}
   .neon .av{border:.14rem solid var(--cor-lin, var(--neon))!important;box-shadow:0 0 .45rem var(--cor-lin, var(--neon))}
   .neon .lin.rei .av{border-color:var(--ouro)!important}
   .neon .meta, .neon .batalha, .neon .alerta{border:.16rem solid var(--neon)!important;box-shadow:0 0 .5rem var(--neon),0 0 1.2rem var(--neon)!important}
@@ -124,6 +125,11 @@
   .limpo .nome{font-weight:800;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .limpo .val{font-weight:900;font-size:1.1rem;font-variant-numeric:tabular-nums}
   .limpo .vazio{opacity:.85;font-size:.95rem}
+  /* formato do número nos visuais Painel e Limpo: um pouco mais de espaço para a forma */
+  body.numfmt:not(.neon){--neon:var(--rosa)}
+  body.numfmt:not(.neon) .lin{grid-template-columns:2.2rem 2.3rem 1fr auto}
+  body.numfmt:not(.neon) .compacto .lin{grid-template-columns:2.2rem 2.5rem 1fr}
+  .limpo.numfmt .lin .pos{box-shadow:0 .1rem .35rem rgba(0,0,0,.7)}
 
   /* ---------- Tops compactos: quantidade embaixo do nome ---------- */
   .painel .caixa.compacto{width:17rem;padding:.8rem .85rem .85rem}
@@ -152,6 +158,14 @@
   body.ef-sombra.painel *{text-shadow:0 .08rem .25rem rgba(0,0,0,.55)}
   body.fundo-transparente .caixa, body.fundo-transparente .meta, body.fundo-transparente .batalha, body.fundo-transparente .alerta{backdrop-filter:none;box-shadow:none}
   .av{color:#fff!important;text-shadow:0 .05rem .2rem rgba(0,0,0,.6)!important}
+  /* cartão claro: o texto de DENTRO do cartão fica escuro (o de fora, como o título no Neon, continua como está) */
+  body.tinta-auto.painel:not(.neon) .caixa, body.tinta-auto .meta, body.tinta-auto .batalha, body.tinta-auto .alerta,
+  body.tinta-auto .gl-card, body.tinta-auto.neon .lin{--ink:#1c1c24;--muted:rgba(28,28,36,.72);color:var(--ink)}
+  body.tinta-auto.ef-sombra:not(.neon) .caixa *, body.tinta-auto.ef-sombra .meta *, body.tinta-auto.ef-sombra .batalha *,
+  body.tinta-auto.ef-sombra .alerta *, body.tinta-auto.ef-sombra .gl-card *, body.tinta-auto.ef-sombra.neon .lin *{text-shadow:none}
+  body.tinta-auto .compacto .lin .val{color:var(--ink)}
+  body.tinta-auto .gl-card.aceso .gl-n{color:#a86b00}
+  body.limpo .caixa, body.limpo .meta, body.limpo .batalha, body.limpo .alerta{background:transparent}
   .fundo-claro .pos{background:rgba(0,0,0,.08)}
   .fundo-claro .compacto .lin:nth-child(1) .val{color:#a86b00}
   .fundo-claro .trilho{background:rgba(0,0,0,.1);border-color:rgba(0,0,0,.12)}
@@ -237,7 +251,7 @@
   .gl-card{flex:none;width:var(--gl-w);height:var(--gl-h);border-radius:1rem;display:flex;flex-direction:column;align-items:center;justify-content:center;
            gap:.25rem;padding:.6rem .5rem;text-align:center;position:relative}
   .painel .gl-card{background:var(--card);border:2px solid rgba(255,255,255,.12)}
-  .neon .gl-card{background:rgba(10,6,20,.82);border:.16rem solid var(--neon);box-shadow:0 0 .5rem var(--neon),0 0 1.2rem var(--neon)}
+  .neon .gl-card{background:var(--card-neon, rgba(10,6,20,.82));border:.16rem solid var(--neon);box-shadow:0 0 .5rem var(--neon),0 0 1.2rem var(--neon)}
   .neon-podio .gl-card.aceso, .neon-unica .gl-card.aceso{border-color:var(--ouro);box-shadow:0 0 .5rem var(--ouro),0 0 1.4rem var(--ouro)}
   .neon-trocando .gl-card.acendeu{animation:acende 1.6s ease-out, neonGira 4s linear infinite;animation-delay:0s, calc(var(--fase4, 0s) - var(--atraso, 0s))}
   .limpo .gl-card{background:transparent}
@@ -253,7 +267,7 @@
   .gl-card.aceso::before{content:"✨";position:absolute;top:.35rem;right:.45rem;font-size:1rem}
   .gl-card.acendeu{animation:acende 1.6s ease-out}
   @keyframes acende{0%{transform:scale(1)}25%{transform:scale(1.12)}100%{transform:scale(1)}}
-  .fundo-claro .gl-card b{color:#1a1a1a}
+  body.tinta-auto .gl-card b{color:#1a1a1a}
 
   /* ---------- batalha ---------- */
   .batalha{width:30rem}
@@ -316,22 +330,28 @@ const LAYOUT = P.get("layout") === "lado" ? "lado" : "compacto";
 const COROA = P.get("coroa") !== "0";
 document.documentElement.style.setProperty("--escala", Math.max(.4, Math.min(3, Number(P.get("escala")) || 1)));
 document.body.className = ESTILO;
-if (NEON) document.body.classList.add("neon", "neon-" + NEON_COR,
-  "num-" + (["losango", "escudo", "placar", "hexagono"].includes(P.get("numero")) ? P.get("numero") : "medalha"));
+if (NEON) document.body.classList.add("neon", "neon-" + NEON_COR);
+// formato do número das posições (Tops), em qualquer visual. Sem &numero: Neon usa medalha; Painel e Limpo, o número simples
+const NUMERO = ["medalha", "losango", "escudo", "placar", "hexagono"].includes(P.get("numero")) ? P.get("numero")
+  : P.get("numero") === "simples" ? "" : (NEON ? "medalha" : "");
+if (NUMERO) document.body.classList.add("numfmt", "num-" + NUMERO);
 // ---------------- cores e efeitos ----------------
 (function aplicarCores() {
   const css = document.documentElement.style, hex = v => /^[0-9a-f]{6}$/i.test(v || "") ? "#" + v : "";
   const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)).join(",");
-  const fundo = ["claro", "transparente"].includes(P.get("fundo")) ? P.get("fundo") : "escuro";
+  // o fundo é só do cartão: o visual Limpo não tem cartão, então ele não muda nada lá
+  const fundo = ESTILO !== "limpo" && ["claro", "transparente"].includes(P.get("fundo")) ? P.get("fundo") : "escuro";
   const op = Math.max(0, Math.min(100, P.get("opacidade") === null ? 86 : Number(P.get("opacidade")) || 0)) / 100;
-  const cor = hex(P.get("cor")) || (fundo === "claro" ? "#1c1c24" : "");
+  const cor = hex(P.get("cor"));
+  // cartão claro com o texto no branco (padrão): só o texto DENTRO dos cartões fica escuro, para dar para ler
+  if (fundo === "claro" && !cor) document.body.classList.add("tinta-auto");
   if (cor) { css.setProperty("--ink", cor); css.setProperty("--muted", `rgba(${rgb(cor)},.75)`); }
   const dest = hex(P.get("destaque"));
   if (dest) { css.setProperty("--rosa", dest); css.setProperty("--ciano", dest); css.setProperty("--rosa-rgb", rgb(dest)); css.setProperty("--ciano-rgb", rgb(dest)); }
   css.setProperty("--brilho-cor", dest || "#fe2c55");
-  if (fundo === "claro") { css.setProperty("--card", `rgba(255,255,255,${op})`); css.setProperty("--linha", "rgba(0,0,0,.12)"); }
-  else if (fundo === "transparente") css.setProperty("--card", "transparent");
-  else css.setProperty("--card", `rgba(18,18,26,${op})`);
+  if (fundo === "claro") { css.setProperty("--card", `rgba(255,255,255,${op})`); css.setProperty("--card-neon", `rgba(255,255,255,${op})`); css.setProperty("--linha", "rgba(0,0,0,.12)"); }
+  else if (fundo === "transparente") { css.setProperty("--card", "transparent"); css.setProperty("--card-neon", "transparent"); }
+  else { css.setProperty("--card", `rgba(18,18,26,${op})`); css.setProperty("--card-neon", `rgba(10,10,22,${op})`); }
   const efeito = ["contorno", "neon", "nenhum"].includes(P.get("efeito")) ? P.get("efeito") : "sombra";
   document.body.classList.add("ef-" + efeito, "fundo-" + fundo);
   if (P.get("pulsar") === "1") document.body.classList.add("anim-pulsar");
