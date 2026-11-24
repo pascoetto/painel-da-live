@@ -88,7 +88,7 @@
   .neon .meta, .neon .batalha, .neon .alerta{border:.16rem solid var(--neon)!important;box-shadow:0 0 .5rem var(--neon),0 0 1.2rem var(--neon)!important}
   /* cores trocando: só a cor do neon gira pelo arco-íris (fotos e textos não mudam); cada linha um pouco atrasada */
   @property --neon-h{syntax:"<number>";inherits:true;initial-value:330}
-  .neon-trocando .lin, .neon-trocando .meta, .neon-trocando .batalha, .neon-trocando .alerta{
+  .neon-trocando .lin, .neon-trocando .meta, .neon-trocando .batalha, .neon-trocando .alerta, .neon-trocando .gl-card{
     --neon:hsl(var(--neon-h) 100% 62%);animation:neonGira 4s linear infinite;animation-delay:calc(var(--fase4, 0s) - var(--atraso, 0s))}
   @keyframes neonGira{to{--neon-h:690}}
   .neon-trocando .alerta{animation:entra .55s cubic-bezier(.2,1.4,.4,1) both, neonGira 4s linear infinite;animation-delay:0s, var(--fase4, 0s)}
@@ -219,15 +219,23 @@
   .gl{display:inline-flex;flex-direction:column;gap:.45rem;--gl-w:9.6rem;--gl-h:11.6rem;--gl-gap:.6rem}
   .gl-tit{font-weight:900;font-size:1rem;text-shadow:0 2px 6px rgba(0,0,0,.6);padding:0 .2rem}
   .gl-tit small{font-weight:800;color:var(--ouro);margin-left:.3rem}
-  .gl-janela{overflow:hidden;position:relative}
-  .gl.h .gl-janela{width:calc(var(--vis) * var(--gl-w) + (var(--vis) - 1) * var(--gl-gap));height:var(--gl-h)}
-  .gl.v .gl-janela{height:calc(var(--vis) * var(--gl-h) + (var(--vis) - 1) * var(--gl-gap));width:var(--gl-w)}
+  .gl-janela{overflow:hidden;position:relative;padding:.9rem}   /* folga para o brilho do neon não ser cortado */
+  .gl-tit{margin-left:.9rem;margin-bottom:-.5rem}
+  .gl.h .gl-janela{width:calc(var(--vis) * var(--gl-w) + (var(--vis) - 1) * var(--gl-gap) + 1.8rem);height:calc(var(--gl-h) + 1.8rem)}
+  .gl.v .gl-janela{height:calc(var(--vis) * var(--gl-h) + (var(--vis) - 1) * var(--gl-gap) + 1.8rem);width:calc(var(--gl-w) + 1.8rem)}
   .gl-trilho{display:flex;gap:var(--gl-gap);transition:transform .7s cubic-bezier(.4,0,.2,1)}
   .gl.v .gl-trilho{flex-direction:column}
+  /* esconde a pontinha dos presentes vizinhos (só aparece o brilho) */
+  .gl.h .gl-janela{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 .9rem,#000 calc(100% - .9rem),transparent 100%);
+                   mask-image:linear-gradient(90deg,transparent 0,#000 .9rem,#000 calc(100% - .9rem),transparent 100%)}
+  .gl.v .gl-janela{-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 .9rem,#000 calc(100% - .9rem),transparent 100%);
+                   mask-image:linear-gradient(180deg,transparent 0,#000 .9rem,#000 calc(100% - .9rem),transparent 100%)}
   .gl-card{flex:none;width:var(--gl-w);height:var(--gl-h);border-radius:1rem;display:flex;flex-direction:column;align-items:center;justify-content:center;
            gap:.25rem;padding:.6rem .5rem;text-align:center;position:relative}
   .painel .gl-card{background:var(--card);border:2px solid rgba(255,255,255,.12)}
-  .neon .gl-card{background:rgba(10,6,20,.82);border:2px solid var(--neon);box-shadow:0 0 .7rem var(--neon)}
+  .neon .gl-card{background:rgba(10,6,20,.82);border:.16rem solid var(--neon);box-shadow:0 0 .5rem var(--neon),0 0 1.2rem var(--neon)}
+  .neon-podio .gl-card.aceso, .neon-unica .gl-card.aceso{border-color:var(--ouro);box-shadow:0 0 .5rem var(--ouro),0 0 1.4rem var(--ouro)}
+  .neon-trocando .gl-card.acendeu{animation:acende 1.6s ease-out, neonGira 4s linear infinite;animation-delay:0s, calc(var(--fase4, 0s) - var(--atraso, 0s))}
   .limpo .gl-card{background:transparent}
   .gl-card .gl-ic{width:4.6rem;height:4.6rem;display:grid;place-items:center;font-size:3.2rem;filter:grayscale(1) brightness(.75);opacity:.5;transition:all .6s}
   .gl-card .gl-ic img{width:100%;height:100%;object-fit:contain}
@@ -440,8 +448,8 @@ const GL_VIS = Math.max(1, Math.min(8, Number(P.get("visiveis")) || 4));
 const GL_TEMPO = Math.max(1.5, Math.min(30, Number(P.get("tempo")) || 3)) * 1000;
 const GL_SO_FALTAM = P.get("so_apagados") === "1";
 let glAssinatura = "", glIdx = 0, glN = 0, glAcesosAntes = null;
-function cardGaleria(i) {
-  return `<div class="gl-card ${i.aceso ? "aceso" : ""}" data-id="${esc(i.id)}">
+function cardGaleria(i, k) {
+  return `<div class="gl-card ${i.aceso ? "aceso" : ""}" data-id="${esc(i.id)}" style="--atraso:${((k % 10) * 0.4).toFixed(1)}s">
     <div class="gl-ic">${i.imagem ? `<img src="${esc(i.imagem)}" referrerpolicy="no-referrer" onerror="this.outerHTML='🎁'">` : "🎁"}</div>
     <b>${esc(i.presente || "Presente")}</b>
     ${i.aceso ? `<span class="gl-n">${i.quem ? esc(i.quem) : "Iluminado!"}</span>`
