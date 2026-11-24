@@ -17,7 +17,7 @@
   Pote:      &cai=foto|presente|ambos (nos presentes: foto da pessoa, imagem do presente ou foto com o presente no cantinho)
   Vídeos:    /overlay/videos  (toca o vídeo escolhido para cada momento; &mudo=1 tira o som)
   Tipos:     curtidas · presentes · compartilhamentos · metas · batalha · alertas
-  metas:     &quais=todas|curtidas|seguidores|diamantes|tiktok  &formato=circulo  &direcao=coluna
+  metas:     &quais=todas|curtidas|seguidores|diamantes|tiktok  &formato=circulo  &direcao=coluna (círculos) | lado (barras)
   galeria:   &direcao=horizontal|vertical  &visiveis=4  &tempo=3  &so_apagados=1
   alertas:   &tipos=seguir,compartilhar,heart,presente,metas,batalha&duracao=5
 -->
@@ -177,6 +177,10 @@
 
   /* ---------- metas ---------- */
   .metas{display:flex;flex-direction:column;gap:.6rem;width:23rem}
+  .metas.lado{flex-direction:row;flex-wrap:nowrap;width:auto;align-items:stretch}          /* barras lado a lado */
+  .metas.lado > .meta{width:17rem;flex:none}
+  .metas.lado .meta .topo{flex-direction:column;gap:.1rem}        /* título numa linha, números embaixo */
+  .metas.lado .meta .topo span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .meta .topo{display:flex;justify-content:space-between;gap:.5rem;font-weight:900;font-size:1rem;margin-bottom:.35rem}
   .meta .topo small{font-weight:700;color:var(--muted);white-space:nowrap}
   .trilho{height:.8rem;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden;border:1px solid rgba(255,255,255,.18)}
@@ -511,7 +515,7 @@ function desenharMetas(d) {
     raiz.innerHTML = `<div class="metas circulos ${COLUNA ? "coluna" : ""}">${["curtidas", "seguidores", "diamantes"].filter(quer).map(t => circuloMeta(t, por(t), d)).join("")}${quer("tiktok") ? circulosTiktok(d) : ""}</div>`;
     return;
   }
-  raiz.innerHTML = `<div class="metas">${["curtidas", "seguidores", "diamantes"].filter(quer).map(t => blocoMeta(t, por(t), d)).join("")}${quer("tiktok") ? blocoTiktok(d) : ""}</div>`;
+  raiz.innerHTML = `<div class="metas ${P.get("direcao") === "lado" ? "lado" : ""}">${["curtidas", "seguidores", "diamantes"].filter(quer).map(t => blocoMeta(t, por(t), d)).join("")}${quer("tiktok") ? blocoTiktok(d) : ""}</div>`;
 }
 
 // ---------------- Batalha ----------------
