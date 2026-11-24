@@ -157,6 +157,9 @@
   body.ef-nenhum, body.ef-nenhum *{text-shadow:none!important}
   body.ef-sombra.painel *{text-shadow:0 .08rem .25rem rgba(0,0,0,.55)}
   body.fundo-transparente .caixa, body.fundo-transparente .meta, body.fundo-transparente .batalha, body.fundo-transparente .alerta{backdrop-filter:none;box-shadow:none}
+  /* intensidade baixa: sem desfoque nem sombra escura atrás do cartão, senão ele parece mais escuro do que foi escolhido */
+  body.fundo-leve .caixa, body.fundo-leve .batalha{backdrop-filter:none;box-shadow:none}
+  body.fundo-leve:not(.neon) .alerta{box-shadow:none}
   .av{color:#fff!important;text-shadow:0 .05rem .2rem rgba(0,0,0,.6)!important}
   /* cartão claro: o texto de DENTRO do cartão fica escuro (o de fora, como o título no Neon, continua como está) */
   body.tinta-auto.painel:not(.neon) .caixa, body.tinta-auto .meta, body.tinta-auto .batalha, body.tinta-auto .alerta,
@@ -354,6 +357,7 @@ if (NUMERO) document.body.classList.add("numfmt", "num-" + NUMERO);
   else { css.setProperty("--card", `rgba(18,18,26,${op})`); css.setProperty("--card-neon", `rgba(10,10,22,${op})`); }
   const efeito = ["contorno", "neon", "nenhum"].includes(P.get("efeito")) ? P.get("efeito") : "sombra";
   document.body.classList.add("ef-" + efeito, "fundo-" + fundo);
+  if (fundo !== "transparente" && op < .6) document.body.classList.add("fundo-leve");
   if (P.get("pulsar") === "1") document.body.classList.add("anim-pulsar");
   if (P.get("brilho") === "1") document.body.classList.add("anim-brilho");
 })();
