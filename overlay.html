@@ -18,6 +18,7 @@
   Vídeos:    /overlay/videos  (toca o vídeo escolhido para cada momento; &mudo=1 tira o som)
   Tipos:     curtidas · presentes · compartilhamentos · metas · batalha · alertas
   metas:     &quais=todas|curtidas|seguidores|diamantes|tiktok  &formato=circulo  &direcao=coluna
+  galeria:   &direcao=horizontal|vertical  &visiveis=4  &tempo=3  &so_apagados=1
   alertas:   &tipos=seguir,compartilhar,heart,presente,metas,batalha&duracao=5
 -->
 <style>
@@ -214,6 +215,34 @@
   .meta.circ .qtd{font-weight:800;font-size:.9rem;color:var(--muted);font-variant-numeric:tabular-nums}
   .meta.circ.ok .qtd{color:var(--ok)}
 
+  /* ---------- galeria da semana (carrossel) ---------- */
+  .gl{display:inline-flex;flex-direction:column;gap:.45rem;--gl-w:9.6rem;--gl-h:11.6rem;--gl-gap:.6rem}
+  .gl-tit{font-weight:900;font-size:1rem;text-shadow:0 2px 6px rgba(0,0,0,.6);padding:0 .2rem}
+  .gl-tit small{font-weight:800;color:var(--ouro);margin-left:.3rem}
+  .gl-janela{overflow:hidden;position:relative}
+  .gl.h .gl-janela{width:calc(var(--vis) * var(--gl-w) + (var(--vis) - 1) * var(--gl-gap));height:var(--gl-h)}
+  .gl.v .gl-janela{height:calc(var(--vis) * var(--gl-h) + (var(--vis) - 1) * var(--gl-gap));width:var(--gl-w)}
+  .gl-trilho{display:flex;gap:var(--gl-gap);transition:transform .7s cubic-bezier(.4,0,.2,1)}
+  .gl.v .gl-trilho{flex-direction:column}
+  .gl-card{flex:none;width:var(--gl-w);height:var(--gl-h);border-radius:1rem;display:flex;flex-direction:column;align-items:center;justify-content:center;
+           gap:.25rem;padding:.6rem .5rem;text-align:center;position:relative}
+  .painel .gl-card{background:var(--card);border:2px solid rgba(255,255,255,.12)}
+  .neon .gl-card{background:rgba(10,6,20,.82);border:2px solid var(--neon);box-shadow:0 0 .7rem var(--neon)}
+  .limpo .gl-card{background:transparent}
+  .gl-card .gl-ic{width:4.6rem;height:4.6rem;display:grid;place-items:center;font-size:3.2rem;filter:grayscale(1) brightness(.75);opacity:.5;transition:all .6s}
+  .gl-card .gl-ic img{width:100%;height:100%;object-fit:contain}
+  .gl-card b{font-size:.92rem;line-height:1.15;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .gl-card .gl-n{font-size:.82rem;font-weight:800;color:var(--muted)}
+  .gl-barra{width:80%;height:.42rem;border-radius:99px;background:rgba(255,255,255,.15);overflow:hidden}
+  .gl-barra i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--rosa),var(--ouro))}
+  .gl-card.aceso .gl-ic{filter:drop-shadow(0 0 .7rem rgba(255,200,61,.95));opacity:1}
+  .painel .gl-card.aceso,.limpo .gl-card.aceso{border-color:var(--ouro);box-shadow:0 0 1rem rgba(255,200,61,.55)}
+  .gl-card.aceso .gl-n{color:var(--ouro)}
+  .gl-card.aceso::before{content:"✨";position:absolute;top:.35rem;right:.45rem;font-size:1rem}
+  .gl-card.acendeu{animation:acende 1.6s ease-out}
+  @keyframes acende{0%{transform:scale(1)}25%{transform:scale(1.12)}100%{transform:scale(1)}}
+  .fundo-claro .gl-card b{color:#1a1a1a}
+
   /* ---------- batalha ---------- */
   .batalha{width:30rem}
   .painel .batalha{background:var(--card);border:2px solid rgba(var(--rosa-rgb),.6);border-radius:1.25rem;padding:.8rem 1rem .9rem;box-shadow:0 .5rem 1.6rem rgba(0,0,0,.35)}
@@ -405,6 +434,61 @@ function circulosTiktok(d) {
     return anelMeta(`tiktok ${ok ? "ok" : ""}`, pct, img, esc(s.presente || "Presente"), `${ok ? "✓ " : ""}${num(s.progresso)}/${num(s.alvo)}`);
   }).join("");
 }
+// ---------------- Galeria da semana: carrossel ----------------
+const GL_DIR = P.get("direcao") === "vertical" ? "v" : "h";
+const GL_VIS = Math.max(1, Math.min(8, Number(P.get("visiveis")) || 4));
+const GL_TEMPO = Math.max(1.5, Math.min(30, Number(P.get("tempo")) || 3)) * 1000;
+const GL_SO_FALTAM = P.get("so_apagados") === "1";
+let glAssinatura = "", glIdx = 0, glN = 0, glAcesosAntes = null;
+function cardGaleria(i) {
+  return `<div class="gl-card ${i.aceso ? "aceso" : ""}" data-id="${esc(i.id)}">
+    <div class="gl-ic">${i.imagem ? `<img src="${esc(i.imagem)}" referrerpolicy="no-referrer" onerror="this.outerHTML='🎁'">` : "🎁"}</div>
+    <b>${esc(i.presente || "Presente")}</b>
+    ${i.aceso ? `<span class="gl-n">${i.quem ? esc(i.quem) : "Iluminado!"}</span>`
+              : `<div class="gl-barra"><i style="width:${Math.min(100, (i.melhor || 0) / Math.max(1, i.qtd) * 100)}%"></i></div><span class="gl-n">${num(i.melhor || 0)}/${num(i.qtd)}</span>`}
+  </div>`;
+}
+function desenharGaleria(d) {
+  const todos = ((d.galeria || {}).itens || []).filter(i => i.presente);
+  const lista = GL_SO_FALTAM ? todos.filter(i => !i.aceso) : todos;
+  const acesos = todos.filter(i => i.aceso).map(i => i.id);
+  const assin = JSON.stringify(lista.map(i => [i.id, i.aceso, i.melhor, i.imagem, i.quem, i.qtd]));
+  if (assin === glAssinatura && raiz.querySelector(".gl")) return;
+  glAssinatura = assin;
+  const novosAcesos = glAcesosAntes ? acesos.filter(id => !glAcesosAntes.includes(id)) : [];
+  glAcesosAntes = acesos;
+  if (!lista.length) { raiz.innerHTML = ""; glN = 0; return; }
+  glN = lista.length;
+  const roda = glN > GL_VIS;                                      // cabe tudo? fica parado
+  if (glIdx >= glN) glIdx = 0;
+  const cards = lista.map(cardGaleria).join("");
+  raiz.innerHTML = `<div class="gl ${GL_DIR}" style="--vis:${Math.min(GL_VIS, glN)}">
+    <div class="gl-tit">✨ Galeria da semana<small>${acesos.length}/${todos.length}</small></div>
+    <div class="gl-janela"><div class="gl-trilho" id="gl-trilho">${cards}${roda ? cards : ""}</div></div></div>`;
+  posicionarGaleria(false);
+  for (const id of novosAcesos) {
+    raiz.querySelectorAll(`.gl-card[data-id="${CSS.escape(id)}"]`).forEach(el => el.classList.add("acendeu"));
+    if (CONFETE) soltarConfete();
+  }
+}
+function posicionarGaleria(animar) {
+  const tr = document.getElementById("gl-trilho");
+  if (!tr) return;
+  const card = tr.firstElementChild;
+  if (!card) return;
+  const gap = parseFloat(getComputedStyle(tr).gap) || 0;
+  const passo = (GL_DIR === "h" ? card.offsetWidth : card.offsetHeight) + gap;
+  tr.style.transition = animar ? "" : "none";
+  tr.style.transform = GL_DIR === "h" ? `translateX(${-glIdx * passo}px)` : `translateY(${-glIdx * passo}px)`;
+}
+if (TIPO === "galeria") {
+  setInterval(() => {
+    if (glN <= GL_VIS) return;
+    glIdx++;
+    posicionarGaleria(true);
+    if (glIdx >= glN) setTimeout(() => { glIdx = 0; posicionarGaleria(false); }, 750);   // volta ao começo sem o salto aparecer
+  }, GL_TEMPO);
+}
 let metasBatidasAntes = null;
 function desenharMetas(d) {
   const ms = (d.metas || []).slice().sort((a, b) => a.valor - b.valor), por = t => ms.filter(m => (m.tipo || "curtidas") === t);
@@ -467,6 +551,7 @@ function textoAlerta(a) {
   const M = {seguir: ["💖", "começou a seguir!"], compartilhar: ["🔁", "compartilhou a live!"], heart: ["💗", "enviou Heart Me!"]};
   if (M[a.tipo]) return {grupo: a.tipo, emo: M[a.tipo][0], quem: a.nome, oque: M[a.tipo][1]};
   if (a.tipo === "presente") return {grupo: "presente", emo: "🎁", quem: a.nome, oque: `enviou ${a.qtd > 1 ? a.qtd + "× " : ""}${a.presente || "um presente"}!`};
+  if (a.tipo === "galeria") return {grupo: "presente", emo: "✨", quem: a.nome, oque: `iluminou ${a.presente || "um presente"} na galeria!`};
   if (a.tipo === "meta") return {grupo: "metas", emo: "🎯", quem: `Meta de ${num(a.valor)} ${{seguidores: "seguidores", diamantes: "diamantes"}[a.meta_tipo] || "curtidas"}`, oque: "batida! Obrigado! 🎉"};
   if (a.tipo === "meta_tiktok") return {grupo: "metas", emo: "🎯", quem: `Meta: ${num(a.valor)} ${a.presente || ""}`, oque: "batida! Obrigado! 🎉"};
   if (a.tipo === "batalha_inicio") return {grupo: "batalha", emo: "⚔️", quem: "Começou a batalha!", oque: `contra ${a.adversario || "a adversária"}`};
@@ -943,6 +1028,9 @@ function dadosTeste() {
               resultado: nos > eles ? "vitoria" : "derrota", missao_ativa: ciclo > 40 && !fimBat,
               ajudantes_nos: [{nome: "Maria Clara", pontos: Math.round(nos * .4)}, {nome: "João Pedro", pontos: Math.round(nos * .25)}, {nome: "Tia Rose", pontos: Math.round(nos * .1)}]},
     alertas, pote,
+    galeria: {itens: [["Rosa", 1, 1], ["Coração", 5, 5], ["GG", 3, 1], ["Sorvete", 10, 4], ["Leão", 1, 0], ["Galáxia", 2, 1], ["Chapéu e bigode", 6, 2]]
+      .map(([n, q, m], k) => ({id: "t" + k, presente: n, qtd: q, imagem: "", melhor: Math.min(q, m + (k === 3 ? Math.floor(t / 3) : 0)),
+        aceso: m >= q || (k === 3 && m + Math.floor(t / 3) >= q), quem: m >= q || (k === 3 && m + Math.floor(t / 3) >= q) ? NOMES_TESTE[k] : "", melhor_nome: NOMES_TESTE[k]}))},
   };
 }
 function seloTeste(ligar) {
@@ -993,6 +1081,7 @@ async function atualizar() {
     if (TOPS[TIPO]) desenharTop(d);
     else if (TIPO === "metas") desenharMetas(d);
     else if (TIPO === "batalha") desenharBatalha(d);
+    else if (TIPO === "galeria") desenharGaleria(d);
     else if (TIPO === "alertas") receberAlertas(d.alertas || []);
     else if (TIPO === "videos") {
       if (TESTE_FIXO || emTeste) videoTeste(d);
