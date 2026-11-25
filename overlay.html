@@ -1172,7 +1172,7 @@ async function montarPalco() {
 window.addEventListener("message", (e) => {
   if (!e.data || !e.data.palcoPeca || !e.data.w) return;
   const ifr = [...document.querySelectorAll("#palco-stage iframe")].find(f => f.contentWindow === e.source);
-  if (ifr) { ifr.style.width = e.data.w + "px"; ifr.style.height = e.data.h + "px"; }
+  if (ifr) ifr.style.height = e.data.h + "px";   // largura fica fixa; só a altura se ajusta (senão as barras encolhem em loop)
 });
 function ajustarPalco() {
   const el = document.getElementById("palco-stage");
