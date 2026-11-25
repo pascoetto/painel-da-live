@@ -1191,13 +1191,14 @@ function urlPeca(p) {
   const q = new URLSearchParams(p.params || "");
   q.set("tipo", rt);
   q.set("palco", "1");
-  q.set("escala", (p.k || 1).toFixed(3));           // o tamanho da peça vem do k (nítido), não de transform
+  q.set("escala", ((p.k || 1) * PALCO_SS).toFixed(3));   // desenha em 2x (supersampling) e o palco reduz: mais nítido
   if (P.get("porta")) q.set("porta", P.get("porta"));
   if (P.get("teste")) q.set("teste", P.get("teste"));
   const base = naHtml ? location.pathname.replace(/[^/]*$/, "") + "overlay.html" : "/overlay/" + rt;
   return base + "?" + q.toString();
 }
-const PALCO_BASE = {vertical: [1080, 1920], horizontal: [1920, 1080]};
+const PALCO_SS = 2;   // desenha em 2x e o LIVE Studio reduz: fica mais nítido (supersampling)
+const PALCO_BASE = {vertical: [1080 * PALCO_SS, 1920 * PALCO_SS], horizontal: [1920 * PALCO_SS, 1080 * PALCO_SS]};
 const PALCO_REF = {curtidas: [300, 760], presentes: [300, 760], compartilhamentos: [300, 760], metas: [400, 390],
                    metatiktok: [420, 260], batalha: [510, 200], alertas: [490, 170], galeria: [700, 285], pote: [500, 700]};
 let palcoAssinatura = "", palcoStage = null;
@@ -1216,7 +1217,7 @@ async function montarPalco() {
     // se ajusta ao conteúdo que ele informa (postMessage), então nada corta
     document.getElementById("palco-stage").innerHTML = (d.pecas || []).map((p, i) => {
       const [rw, rh] = PALCO_REF[p.tipo] || [400, 400];
-      return `<iframe class="palco-peca" data-i="${i}" style="left:${p.x / 100 * W}px;top:${p.y / 100 * H}px;width:${rw * p.k}px;height:${rh * p.k}px" src="${urlPeca(p)}"></iframe>`;
+      return `<iframe class="palco-peca" data-i="${i}" style="left:${p.x / 100 * W}px;top:${p.y / 100 * H}px;width:${rw * p.k * PALCO_SS}px;height:${rh * p.k * PALCO_SS}px" src="${urlPeca(p)}"></iframe>`;
     }).join("");
     palcoStage = {W, H};
     ajustarPalco();
