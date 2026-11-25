@@ -1207,14 +1207,18 @@ async function montarPalco() {
     const ass = JSON.stringify(d) + "|" + Math.round(innerWidth) + "x" + Math.round(innerHeight);
     if (ass === palcoAssinatura) return;                 // remonta quando o arranjo OU o tamanho da tela muda
     palcoAssinatura = ass;
-    const [LW] = PALCO_BASE[d.orientacao === "horizontal" ? "horizontal" : "vertical"];
-    palcoFator = innerWidth / LW;    // px reais por px lógico (1 quando a fonte está em 1080 de largura)
-    // sem moldura esticada: cada peça é desenhada no tamanho real da tela (escala = k × fator) e
-    // posicionada direto na viewport. Como não há transform por cima, cada iframe fica nítido (igual ao individual)
-    raiz.innerHTML = `<div id="palco-stage" style="position:fixed;inset:0"></div>`;
+    const [LW, LH] = PALCO_BASE[d.orientacao === "horizontal" ? "horizontal" : "vertical"];
+    // encaixa o palco lógico (1080×1920) na tela MANTENDO A PROPORÇÃO (sem esticar/transform):
+    // na fonte certa do LIVE Studio (1080×1920) o fator é 1 e preenche tudo; em telas de proporção
+    // diferente (prévia no navegador) sobra uma borda transparente em vez de cortar as peças.
+    palcoFator = Math.min(innerWidth / LW, innerHeight / LH);
+    const sW = LW * palcoFator, sH = LH * palcoFator;
+    const offX = (innerWidth - sW) / 2, offY = (innerHeight - sH) / 2;
+    raiz.innerHTML = `<div id="palco-stage" style="position:fixed;left:${offX}px;top:${offY}px;width:${sW}px;height:${sH}px"></div>`;
+    // cada peça renderiza no tamanho real (escala = k × fator), sem transform por cima: nítida como o individual
     document.getElementById("palco-stage").innerHTML = (d.pecas || []).map((p, i) => {
       const [rw, rh] = PALCO_REF[p.tipo] || [400, 400], esc = p.k * palcoFator;
-      return `<iframe class="palco-peca" data-i="${i}" style="left:${p.x / 100 * innerWidth}px;top:${p.y / 100 * innerHeight}px;width:${rw * esc}px;height:${rh * esc}px" src="${urlPeca(p)}"></iframe>`;
+      return `<iframe class="palco-peca" data-i="${i}" style="left:${p.x / 100 * sW}px;top:${p.y / 100 * sH}px;width:${rw * esc}px;height:${rh * esc}px" src="${urlPeca(p)}"></iframe>`;
     }).join("");
   } catch (e) {}
 }
