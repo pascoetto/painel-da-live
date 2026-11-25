@@ -1138,6 +1138,7 @@ function urlPeca(p) {
   const naHtml = location.pathname.includes("overlay.html");
   const q = new URLSearchParams(p.params || "");
   q.set("tipo", p.tipo);
+  q.set("palco", "1");
   q.set("escala", (p.k || 1).toFixed(3));           // o tamanho da peça vem do k (nítido), não de transform
   if (P.get("porta")) q.set("porta", P.get("porta"));
   if (P.get("teste")) q.set("teste", P.get("teste"));
@@ -1172,7 +1173,7 @@ async function montarPalco() {
 window.addEventListener("message", (e) => {
   if (!e.data || !e.data.palcoPeca || !e.data.w) return;
   const ifr = [...document.querySelectorAll("#palco-stage iframe")].find(f => f.contentWindow === e.source);
-  if (ifr) ifr.style.height = e.data.h + "px";   // largura fica fixa; só a altura se ajusta (senão as barras encolhem em loop)
+  if (ifr) { ifr.style.width = e.data.w + "px"; ifr.style.height = e.data.h + "px"; }
 });
 function ajustarPalco() {
   const el = document.getElementById("palco-stage");
@@ -1180,12 +1181,14 @@ function ajustarPalco() {
   const {W, H} = palcoStage, s = Math.min(innerWidth / W, innerHeight / H);
   el.style.transform = `translate(${(innerWidth - W * s) / 2}px, ${(innerHeight - H * s) / 2}px) scale(${s})`;
 }
-if (window.parent !== window && TIPO !== "palco") {
-  // informa à tela única o tamanho real do conteúdo, para a caixa se ajustar e não cortar
+if (P.get("palco") === "1" && TIPO !== "palco") {
+  // dentro da tela única: o overlay encolhe ao conteúdo, então a largura vira a do conteúdo (não do iframe).
+  // isso evita o encolhimento em laço e deixa metas em círculo/lado numa linha só
+  if (TIPO !== "pote") { document.documentElement.style.width = "max-content"; document.body.style.width = "max-content"; }
   const relatar = () => {
-    let w = 0, h = 0;
-    for (const c of raiz.children) { const r = c.getBoundingClientRect(); w = Math.max(w, r.right); h = Math.max(h, r.bottom); }
-    if (w > 1 && h > 1) { try { parent.postMessage({palcoPeca: 1, w: Math.ceil(w) + 8, h: Math.ceil(h) + 8}, "*"); } catch (e) {} }
+    const r = raiz.getBoundingClientRect();
+    const w = Math.ceil(r.width), h = Math.ceil(r.height);
+    if (w > 1 && h > 1) { try { parent.postMessage({palcoPeca: 1, w: w, h: h + 8}, "*"); } catch (e) {} }
   };
   try { new ResizeObserver(relatar).observe(raiz); } catch (e) {}
   setInterval(relatar, 800);
