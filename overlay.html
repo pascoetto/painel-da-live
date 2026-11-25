@@ -1084,8 +1084,10 @@ function seloTeste(ligar) {
 function aplicarVisualDoPainel(v) {
   if (!v || typeof v !== "object") return false;
   const alvo = new URLSearchParams();
-  ["tipo", "porta", "teste"].forEach(k => { if (P.has(k)) alvo.set(k, P.get(k)); });
-  Object.entries(v).forEach(([k, val]) => { if (!["tipo", "porta", "teste"].includes(k)) alvo.set(k, String(val)); });
+  // preserva tambem palco (encaixe na tela unica); no palco, a escala vem do tamanho da peca (k) e manda
+  ["tipo", "porta", "teste", "palco"].forEach(k => { if (P.has(k)) alvo.set(k, P.get(k)); });
+  Object.entries(v).forEach(([k, val]) => { if (!["tipo", "porta", "teste", "palco"].includes(k)) alvo.set(k, String(val)); });
+  if (P.get("palco") === "1" && P.has("escala")) alvo.set("escala", P.get("escala"));
   const norm = q => [...q.entries()].map(([k, x]) => k + "=" + x).sort().join("&");
   if (norm(alvo) === norm(P)) return false;
   location.replace(location.pathname + "?" + alvo.toString());
