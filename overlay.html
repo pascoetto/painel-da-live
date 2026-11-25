@@ -1191,36 +1191,31 @@ function urlPeca(p) {
   const q = new URLSearchParams(p.params || "");
   q.set("tipo", rt);
   q.set("palco", "1");
-  q.set("escala", ((p.k || 1) * PALCO_SS).toFixed(3));   // desenha em 2x (supersampling) e o palco reduz: mais nítido
+  q.set("escala", ((p.k || 1) * palcoFator).toFixed(3));   // desenha no tamanho real da tela (sem transform): nítido como o individual
   if (P.get("porta")) q.set("porta", P.get("porta"));
   if (P.get("teste")) q.set("teste", P.get("teste"));
   const base = naHtml ? location.pathname.replace(/[^/]*$/, "") + "overlay.html" : "/overlay/" + rt;
   return base + "?" + q.toString();
 }
-const PALCO_SS = 2;   // desenha em 2x e o LIVE Studio reduz: fica mais nítido (supersampling)
-const PALCO_BASE = {vertical: [1080 * PALCO_SS, 1920 * PALCO_SS], horizontal: [1920 * PALCO_SS, 1080 * PALCO_SS]};
+const PALCO_BASE = {vertical: [1080, 1920], horizontal: [1920, 1080]};   // tamanho lógico (cada peça é desenhada no tamanho real da tela)
 const PALCO_REF = {curtidas: [300, 760], presentes: [300, 760], compartilhamentos: [300, 760], metas: [400, 390],
                    metatiktok: [420, 260], batalha: [510, 200], alertas: [490, 170], galeria: [700, 285], pote: [500, 700]};
-let palcoAssinatura = "", palcoStage = null;
+let palcoAssinatura = "", palcoFator = 1;
 async function montarPalco() {
   try {
     const d = await (await fetch(API + "/api/palco", {cache: "no-store"})).json();
-    const ass = JSON.stringify(d);
-    if (ass === palcoAssinatura) return;                 // só remonta os iframes quando o arranjo muda
+    const ass = JSON.stringify(d) + "|" + Math.round(innerWidth) + "x" + Math.round(innerHeight);
+    if (ass === palcoAssinatura) return;                 // remonta quando o arranjo OU o tamanho da tela muda
     palcoAssinatura = ass;
-    const [W, H] = PALCO_BASE[d.orientacao === "horizontal" ? "horizontal" : "vertical"];
-    // palco de tamanho fixo (1080×1920) que é escalado para caber na fonte do LIVE Studio:
-    // assim cada peça fica igual ao que a pessoa montou no painel, em qualquer tamanho de tela.
-    // cada overlay é desenhado no tamanho sugerido dele e sofre um zoom inteiro (k) — igual para todos
-    raiz.innerHTML = `<div id="palco-stage" style="width:${W}px;height:${H}px"></div>`;
-    // cada peça: o overlay é desenhado no tamanho de verdade (escala = k, sempre nítido) e a caixa
-    // se ajusta ao conteúdo que ele informa (postMessage), então nada corta
+    const [LW] = PALCO_BASE[d.orientacao === "horizontal" ? "horizontal" : "vertical"];
+    palcoFator = innerWidth / LW;    // px reais por px lógico (1 quando a fonte está em 1080 de largura)
+    // sem moldura esticada: cada peça é desenhada no tamanho real da tela (escala = k × fator) e
+    // posicionada direto na viewport. Como não há transform por cima, cada iframe fica nítido (igual ao individual)
+    raiz.innerHTML = `<div id="palco-stage" style="position:fixed;inset:0"></div>`;
     document.getElementById("palco-stage").innerHTML = (d.pecas || []).map((p, i) => {
-      const [rw, rh] = PALCO_REF[p.tipo] || [400, 400];
-      return `<iframe class="palco-peca" data-i="${i}" style="left:${p.x / 100 * W}px;top:${p.y / 100 * H}px;width:${rw * p.k * PALCO_SS}px;height:${rh * p.k * PALCO_SS}px" src="${urlPeca(p)}"></iframe>`;
+      const [rw, rh] = PALCO_REF[p.tipo] || [400, 400], esc = p.k * palcoFator;
+      return `<iframe class="palco-peca" data-i="${i}" style="left:${p.x / 100 * innerWidth}px;top:${p.y / 100 * innerHeight}px;width:${rw * esc}px;height:${rh * esc}px" src="${urlPeca(p)}"></iframe>`;
     }).join("");
-    palcoStage = {W, H};
-    ajustarPalco();
   } catch (e) {}
 }
 window.addEventListener("message", (e) => {
@@ -1228,12 +1223,7 @@ window.addEventListener("message", (e) => {
   const ifr = [...document.querySelectorAll("#palco-stage iframe")].find(f => f.contentWindow === e.source);
   if (ifr) { ifr.style.width = e.data.w + "px"; ifr.style.height = e.data.h + "px"; }
 });
-function ajustarPalco() {
-  const el = document.getElementById("palco-stage");
-  if (!el || !palcoStage) return;
-  const {W, H} = palcoStage, s = Math.min(innerWidth / W, innerHeight / H);
-  el.style.transform = `translate(${(innerWidth - W * s) / 2}px, ${(innerHeight - H * s) / 2}px) scale(${s})`;
-}
+function ajustarPalco() { palcoAssinatura = ""; montarPalco(); }   // ao mudar o tamanho da tela, redesenha nítido
 if (P.get("palco") === "1" && TIPO !== "palco") {
   // dentro da tela única: o overlay encolhe ao conteúdo, então a largura vira a do conteúdo (não do iframe).
   // isso evita o encolhimento em laço e deixa metas em círculo/lado numa linha só
