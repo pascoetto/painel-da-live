@@ -1188,12 +1188,15 @@ function ajustarPalco() {
 if (P.get("palco") === "1" && TIPO !== "palco") {
   // dentro da tela única: o overlay encolhe ao conteúdo, então a largura vira a do conteúdo (não do iframe).
   // isso evita o encolhimento em laço e deixa metas em círculo/lado numa linha só
-  if (TIPO !== "pote") { document.documentElement.style.width = "max-content"; document.body.style.width = "max-content"; }
+  if (TIPO !== "pote") {
+    document.documentElement.style.width = "max-content"; document.body.style.width = "max-content";
+    raiz.style.padding = "1.4rem"; raiz.style.boxSizing = "content-box";   // folga p/ o brilho do neon não cortar
+  }
   document.body.classList.add("napalco");
   const relatar = () => {
     const r = raiz.getBoundingClientRect();
     const w = Math.ceil(r.width), h = Math.ceil(r.height);
-    if (w > 1 && h > 1) { try { parent.postMessage({palcoPeca: 1, w: w + 6, h: h + 8}, "*"); } catch (e) {} }
+    if (w > 1 && h > 1) { try { parent.postMessage({palcoPeca: 1, w: w, h: h}, "*"); } catch (e) {} }
   };
   try { new ResizeObserver(relatar).observe(raiz); } catch (e) {}
   setInterval(relatar, 800);
