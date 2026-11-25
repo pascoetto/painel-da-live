@@ -822,6 +822,7 @@ function iniciarPote() {
   const esc = Number(getComputedStyle(document.documentElement).getPropertyValue("--escala")) || 1;
   const g = {W, H, ctx, engine, corpos: new Map(), vistos: new Set(), fila: [], esvaziando: false, cortado: lerEsvaziado()};
   g.raio = Math.max(12, Math.min(W, H) * 0.045 * esc);
+  g.linhaEsc = P.get("palco") === "1" ? Math.max(.5, Math.min(1, Math.min(W, H) / 1000)) : 1;   // na tela única o pote é menor: afina a linha pra não ficar grossa
   const fundo = [], lados = [];
   if (PT.recipiente === "chao") {
     fundo.push(Bodies.rectangle(W / 2, H + 25, W * 2, 50, est));
@@ -981,8 +982,8 @@ function desenharRecipienteFrente(g) {
   if (NEON) {
     if (g.jar) {
       const j = g.jar;
-      contornoNeon(c, () => { caminhoPote(c, j); c.stroke(); }, 4);
-      contornoNeon(c, () => { c.beginPath(); c.ellipse(j.cx, j.topo + 3, j.nw, j.jh * .03, 0, 0, Math.PI); c.stroke(); }, 3);
+      contornoNeon(c, () => { caminhoPote(c, j); c.stroke(); }, 4 * g.linhaEsc);
+      contornoNeon(c, () => { c.beginPath(); c.ellipse(j.cx, j.topo + 3, j.nw, j.jh * .03, 0, 0, Math.PI); c.stroke(); }, 3 * g.linhaEsc);
     } else if (g.aq) {
       const {cx, cy, R} = g.aq;
       contornoNeon(c, () => { c.beginPath(); c.arc(cx, cy, R + 10, -50 * Math.PI / 180, 230 * Math.PI / 180); c.stroke(); }, 5);
@@ -994,7 +995,7 @@ function desenharRecipienteFrente(g) {
   c.lineWidth = 6; c.strokeStyle = "rgba(255,255,255,.75)"; c.shadowColor = "rgba(0,0,0,.45)"; c.shadowBlur = 8;
   if (g.jar) {
     const j = g.jar;
-    c.lineWidth = 4; c.strokeStyle = "rgba(255,255,255,.8)";
+    c.lineWidth = 4 * g.linhaEsc; c.strokeStyle = "rgba(255,255,255,.8)";
     caminhoPote(c, j); c.stroke();
     c.shadowBlur = 0;
     // boca (elipse da frente) e roscas inclinadas
@@ -1191,7 +1192,8 @@ function urlPeca(p) {
   const q = new URLSearchParams(p.params || "");
   q.set("tipo", rt);
   q.set("palco", "1");
-  q.set("escala", ((p.k || 1) * palcoFator).toFixed(3));   // desenha no tamanho real da tela (sem transform): nítido como o individual
+  // o pote dimensiona tudo pelo tamanho do próprio iframe; passar o zoom aqui dobraria o tamanho dos presentes
+  q.set("escala", (p.tipo === "pote" ? 1 : (p.k || 1) * palcoFator).toFixed(3));   // desenha no tamanho real da tela (sem transform): nítido como o individual
   if (P.get("porta")) q.set("porta", P.get("porta"));
   if (P.get("teste")) q.set("teste", P.get("teste"));
   const base = naHtml ? location.pathname.replace(/[^/]*$/, "") + "overlay.html" : "/overlay/" + rt;
