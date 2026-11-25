@@ -26,6 +26,9 @@
         --card:rgba(18,18,26,.86);--linha:rgba(255,255,255,.12);--ink:#fff;--muted:rgba(255,255,255,.72)}
   html{font-size:calc(16px * var(--escala, 1))}
   html,body{margin:0;background:transparent;overflow:hidden}
+  body.palco #raiz{position:fixed;inset:0;overflow:hidden}
+  #palco-stage{position:absolute;top:0;left:0;transform-origin:top left}
+  .palco-peca{position:absolute;border:0;background:transparent;overflow:hidden}
   body{font-family:var(--fonte, "TikTok Sans"),"TikTok Sans",Inter,"Segoe UI",Arial,sans-serif;color:var(--ink);padding:.75rem}
   *{box-sizing:border-box}
   .some{display:none!important}
@@ -1130,8 +1133,49 @@ async function atualizar() {
     if (!conseguiu && ++falhas >= 4) raiz.innerHTML = `<div class="caixa"><div class="tit" style="font-size:.95rem">⚠️ Abra o XLiv neste computador</div></div>`;
   }
 }
-atualizar();
-setInterval(atualizar, TIPO === "alertas" || TIPO === "videos" ? 700 : 1500);
+// ---------------- Tela única (palco): junta vários overlays numa página só ----------------
+function urlPeca(p) {
+  const naHtml = location.pathname.includes("overlay.html");
+  const q = new URLSearchParams(p.params || "");
+  q.set("tipo", p.tipo);
+  if (P.get("porta")) q.set("porta", P.get("porta"));
+  if (P.get("teste")) q.set("teste", P.get("teste"));
+  const base = naHtml ? location.pathname.replace(/[^/]*$/, "") + "overlay.html" : "/overlay/" + p.tipo;
+  return base + "?" + q.toString();
+}
+const PALCO_BASE = {vertical: [1080, 1920], horizontal: [1920, 1080]};
+let palcoAssinatura = "", palcoStage = null;
+async function montarPalco() {
+  try {
+    const d = await (await fetch(API + "/api/palco", {cache: "no-store"})).json();
+    const ass = JSON.stringify(d);
+    if (ass === palcoAssinatura) return;                 // só remonta os iframes quando o arranjo muda
+    palcoAssinatura = ass;
+    const [W, H] = PALCO_BASE[d.orientacao === "horizontal" ? "horizontal" : "vertical"];
+    // palco de tamanho fixo (1080×1920) que é escalado para caber na fonte do LIVE Studio:
+    // assim cada peça fica igual ao que a pessoa montou no painel, em qualquer tamanho de tela
+    raiz.innerHTML = `<div id="palco-stage" style="width:${W}px;height:${H}px"></div>`;
+    document.getElementById("palco-stage").innerHTML = (d.pecas || []).map(p =>
+      `<iframe class="palco-peca" style="left:${p.x / 100 * W}px;top:${p.y / 100 * H}px;width:${p.w / 100 * W}px;height:${p.h / 100 * H}px" src="${urlPeca(p)}"></iframe>`).join("");
+    palcoStage = {W, H};
+    ajustarPalco();
+  } catch (e) {}
+}
+function ajustarPalco() {
+  const el = document.getElementById("palco-stage");
+  if (!el || !palcoStage) return;
+  const {W, H} = palcoStage, s = Math.min(innerWidth / W, innerHeight / H);
+  el.style.transform = `translate(${(innerWidth - W * s) / 2}px, ${(innerHeight - H * s) / 2}px) scale(${s})`;
+}
+if (TIPO === "palco") {
+  document.body.classList.add("palco");
+  window.addEventListener("resize", ajustarPalco);
+  montarPalco();
+  setInterval(montarPalco, 3000);
+} else {
+  atualizar();
+  setInterval(atualizar, TIPO === "alertas" || TIPO === "videos" ? 700 : 1500);
+}
 </script>
 </body>
 </html>
