@@ -1144,6 +1144,8 @@ function urlPeca(p) {
   return base + "?" + q.toString();
 }
 const PALCO_BASE = {vertical: [1080, 1920], horizontal: [1920, 1080]};
+const PALCO_REF = {curtidas: [400, 620], presentes: [400, 620], compartilhamentos: [400, 620], metas: [400, 420],
+                   batalha: [520, 220], alertas: [480, 150], galeria: [760, 230], pote: [500, 700]};
 let palcoAssinatura = "", palcoStage = null;
 async function montarPalco() {
   try {
@@ -1153,10 +1155,13 @@ async function montarPalco() {
     palcoAssinatura = ass;
     const [W, H] = PALCO_BASE[d.orientacao === "horizontal" ? "horizontal" : "vertical"];
     // palco de tamanho fixo (1080×1920) que é escalado para caber na fonte do LIVE Studio:
-    // assim cada peça fica igual ao que a pessoa montou no painel, em qualquer tamanho de tela
+    // assim cada peça fica igual ao que a pessoa montou no painel, em qualquer tamanho de tela.
+    // cada overlay é desenhado no tamanho sugerido dele e sofre um zoom inteiro (k) — igual para todos
     raiz.innerHTML = `<div id="palco-stage" style="width:${W}px;height:${H}px"></div>`;
-    document.getElementById("palco-stage").innerHTML = (d.pecas || []).map(p =>
-      `<iframe class="palco-peca" style="left:${p.x / 100 * W}px;top:${p.y / 100 * H}px;width:${p.w / 100 * W}px;height:${p.h / 100 * H}px" src="${urlPeca(p)}"></iframe>`).join("");
+    document.getElementById("palco-stage").innerHTML = (d.pecas || []).map(p => {
+      const [rw, rh] = PALCO_REF[p.tipo] || [400, 400];
+      return `<iframe class="palco-peca" style="left:${p.x / 100 * W}px;top:${p.y / 100 * H}px;width:${rw}px;height:${rh}px;transform:scale(${p.k});transform-origin:top left" src="${urlPeca(p)}"></iframe>`;
+    }).join("");
     palcoStage = {W, H};
     ajustarPalco();
   } catch (e) {}
