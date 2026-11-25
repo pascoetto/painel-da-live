@@ -248,6 +248,10 @@
   .gl-tit{margin-left:.9rem;margin-bottom:-.5rem}
   .gl.h .gl-janela{width:calc(var(--vis) * var(--gl-w) + (var(--vis) - 1) * var(--gl-gap) + 1.8rem);height:calc(var(--gl-h) + 1.8rem)}
   .gl.v .gl-janela{height:calc(var(--vis) * var(--gl-h) + (var(--vis) - 1) * var(--gl-gap) + 1.8rem);width:calc(var(--gl-w) + 1.8rem)}
+  .mtk-roda{position:relative}
+  .mtk-roda > *{opacity:0;transition:opacity .55s ease}
+  .mtk-roda > *:not(.ativo){position:absolute;top:0;left:0;pointer-events:none}
+  .mtk-roda > *.ativo{opacity:1;position:relative}
   .gl-trilho{display:flex;gap:var(--gl-gap);transition:transform .7s cubic-bezier(.4,0,.2,1)}
   .gl.v .gl-trilho{flex-direction:column}
   /* esconde a pontinha dos presentes vizinhos (só aparece o brilho) */
@@ -474,6 +478,38 @@ function circulosTiktok(d) {
     return anelMeta(`tiktok ${ok ? "ok" : ""}`, pct, img, esc(s.presente || "Presente"), `${ok ? "✓ " : ""}${num(s.progresso)}/${num(s.alvo)}`);
   }).join("");
 }
+// ---------------- Meta do TikTok: segunda forma (um presente por vez, alternando) ----------------
+const TK_RODAR = P.get("tkrodar") === "1";
+const TK_TEMPO = Math.max(2, Math.min(60, Number(P.get("tktempo")) || 5)) * 1000;
+function subsTiktok(d, circulo) {
+  const mt = d.meta_tiktok;
+  if (!mt || !(mt.subs || []).length) return [];
+  if (mt.expira && mt.expira < Date.now() / 1000 - 600) return [];
+  return mt.subs.map(s => {
+    const ok = s.alvo && s.progresso >= s.alvo, pct = s.alvo ? Math.min(100, s.progresso / s.alvo * 100) : 0;
+    if (circulo) {
+      const img = s.icone ? `<img src="${esc(s.icone)}" referrerpolicy="no-referrer" onerror="this.outerHTML='<span class=emo>🎁</span>'">` : `<span class="emo">🎁</span>`;
+      return anelMeta(`tiktok ${ok ? "ok" : ""}`, pct, img, esc(s.presente || "Presente"), `${ok ? "✓ " : ""}${num(s.progresso)}/${num(s.alvo)}`);
+    }
+    const img = s.icone ? `<img src="${esc(s.icone)}" referrerpolicy="no-referrer" onerror="this.replaceWith('🎁')">` : "🎁";
+    return `<div class="meta tiktok"><div class="topo"><span>🎯 Meta da LIVE</span></div><div class="mtk">${img}
+      <span>${esc(s.presente)}</span><b>${ok ? "✓ " : ""}${num(s.progresso)}/${num(s.alvo)}</b>
+      <div class="trilho"><div class="enche" style="width:${pct}%;${ok ? "background:var(--ok)" : ""}"></div></div></div></div>`;
+  });
+}
+let tkIdx = 0, tkTimer = null, tkN = 0;
+function aplicarAtivoTiktok() {
+  const cont = raiz.querySelector(".mtk-roda");
+  if (!cont) return;
+  [...cont.children].forEach((c, i) => c.classList.toggle("ativo", i === tkIdx));
+}
+function montarRodarTiktok(n) {
+  tkN = n;
+  if (tkIdx >= n) tkIdx = 0;
+  if (!tkTimer && n > 1) tkTimer = setInterval(() => { tkIdx = (tkIdx + 1) % Math.max(1, tkN); aplicarAtivoTiktok(); }, TK_TEMPO);
+  aplicarAtivoTiktok();
+}
+
 // ---------------- Galeria da semana: carrossel ----------------
 const GL_DIR = P.get("direcao") === "vertical" ? "v" : "h";
 const GL_VIS = Math.max(1, Math.min(8, Number(P.get("visiveis")) || 4));
@@ -539,12 +575,24 @@ function desenharMetas(d) {
   if (metasBatidasAntes !== null && batidas > metasBatidasAntes) soltarConfete();
   metasBatidasAntes = batidas;
   const quer = t => QUAIS === "todas" || QUAIS.split(",").includes(t);
+  const temTk = quer("tiktok");
+  // com o carrossel ligado, só redesenha quando os dados mudam (senão o fade reiniciava a cada atualização)
+  if (TK_RODAR && temTk) {
+    const sig = JSON.stringify([ms.map(m => [m.tipo, m.valor]), totais, subsTk.map(s => [s.presente, s.progresso, s.alvo])]);
+    if (sig === metasSig && raiz.querySelector(".mtk-roda")) return;
+    metasSig = sig;
+  }
   if (CIRCULO) {
-    raiz.innerHTML = `<div class="metas circulos ${COLUNA ? "coluna" : ""}">${["curtidas", "seguidores", "diamantes"].filter(quer).map(t => circuloMeta(t, por(t), d)).join("")}${quer("tiktok") ? circulosTiktok(d) : ""}</div>`;
+    const tk = temTk ? (TK_RODAR ? `<div class="mtk-roda">${subsTiktok(d, true).join("")}</div>` : circulosTiktok(d)) : "";
+    raiz.innerHTML = `<div class="metas circulos ${COLUNA ? "coluna" : ""}">${["curtidas", "seguidores", "diamantes"].filter(quer).map(t => circuloMeta(t, por(t), d)).join("")}${tk}</div>`;
+    if (temTk && TK_RODAR) montarRodarTiktok(subsTiktok(d, true).length);
     return;
   }
-  raiz.innerHTML = `<div class="metas ${P.get("direcao") === "lado" ? "lado" : ""}">${["curtidas", "seguidores", "diamantes"].filter(quer).map(t => blocoMeta(t, por(t), d)).join("")}${quer("tiktok") ? blocoTiktok(d) : ""}</div>`;
+  const tk = temTk ? (TK_RODAR ? `<div class="mtk-roda">${subsTiktok(d, false).join("")}</div>` : blocoTiktok(d)) : "";
+  raiz.innerHTML = `<div class="metas ${P.get("direcao") === "lado" ? "lado" : ""}">${["curtidas", "seguidores", "diamantes"].filter(quer).map(t => blocoMeta(t, por(t), d)).join("")}${tk}</div>`;
+  if (temTk && TK_RODAR) montarRodarTiktok(subsTiktok(d, false).length);
 }
+let metasSig = "";
 
 // ---------------- Batalha ----------------
 let relogio = null;
