@@ -363,6 +363,35 @@
     animation:megaBate .9s ease-out both}
   @keyframes megaBate{0%{opacity:0;transform:translate(-50%,-50%) scale(.3) rotate(-25deg)}40%{opacity:1;transform:translate(-50%,-50%) scale(1.2) rotate(8deg)}
     70%{transform:translate(-50%,-50%) scale(1) rotate(-4deg)}100%{opacity:0;transform:translate(-50%,-50%) scale(.6)}}
+  /* fogos de artifício */
+  .fogo{position:absolute;width:.55rem;height:.55rem;border-radius:50%;opacity:0;animation:fogoP 1.1s ease-out var(--f-atraso,0s) both}
+  @keyframes fogoP{0%{opacity:1;transform:translate(0,0) scale(1.2)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.2)}}
+  /* caixa de presente */
+  .caixa-anim{position:absolute;left:50%;top:50%;font-size:5rem;z-index:3;animation:caixaCai 1.15s ease-out both}
+  @keyframes caixaCai{0%{transform:translate(-50%,-320%) scale(.6)}42%{transform:translate(-50%,-50%) scale(1.12)}
+    52%{transform:translate(-54%,-50%) rotate(-9deg)}62%{transform:translate(-46%,-50%) rotate(9deg)}72%{transform:translate(-50%,-50%) rotate(0)}
+    100%{transform:translate(-50%,-50%) scale(1.6);opacity:0}}
+  /* impacto */
+  .cena.impacto{animation:treme .45s ease-out .05s}
+  @keyframes treme{0%,100%{transform:translate(0,0)}15%{transform:translate(-9px,6px)}35%{transform:translate(8px,-6px)}55%{transform:translate(-6px,5px)}75%{transform:translate(5px,-4px)}}
+  .choque{position:absolute;left:50%;top:50%;width:6rem;height:6rem;margin:-3rem;border-radius:50%;border:.45rem solid #fff;opacity:0;box-shadow:0 0 1.5rem #fff;animation:choqueExp .6s ease-out .05s both}
+  @keyframes choqueExp{0%{opacity:.95;transform:scale(.3)}100%{opacity:0;transform:scale(6.5)}}
+  .cena.impacto .rev{animation:revBate .6s cubic-bezier(.2,1.6,.3,1) 0s both}
+  @keyframes revBate{0%{opacity:0;transform:scale(2.6)}55%{opacity:1;transform:scale(.92)}100%{opacity:1;transform:scale(1)}}
+  /* estrela cadente */
+  .estrela{position:absolute;left:0;top:0;font-size:2.8rem;z-index:3;filter:drop-shadow(0 0 .6rem #ffe98a);animation:estrelaVoa 1s ease-in forwards}
+  @keyframes estrelaVoa{0%{left:-8%;top:2%;opacity:1;transform:rotate(25deg)}82%{opacity:1}100%{left:50%;top:50%;transform:translate(-50%,-50%) rotate(25deg) scale(.2);opacity:0}}
+  /* chamas */
+  .chama{position:absolute;bottom:-3rem;font-size:2.6rem;z-index:2;opacity:0;animation:chamaSobe 1.4s ease-out var(--ch-atraso,0s) both}
+  @keyframes chamaSobe{0%{opacity:0;transform:translateY(0) scale(.6)}18%{opacity:1}100%{opacity:0;transform:translateY(-17rem) scale(1.15)}}
+  /* troféu */
+  .trofeu{position:absolute;left:50%;top:50%;font-size:5rem;z-index:3;animation:trofeuSobe 1.1s cubic-bezier(.2,1.3,.4,1) both}
+  @keyframes trofeuSobe{0%{opacity:0;transform:translate(-50%,40%) scale(.4)}55%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1.25)}}
+  .raios{position:absolute;left:50%;top:50%;width:26rem;height:26rem;margin:-13rem;z-index:1;opacity:0;border-radius:50%;
+    background:repeating-conic-gradient(from 0deg,rgba(255,216,77,.35) 0deg 8deg,transparent 8deg 20deg);animation:raiosGira 7s linear infinite,raiosAcende .6s ease-out var(--rev-atraso,1s) both}
+  @keyframes raiosGira{to{transform:rotate(360deg)}}
+  @keyframes raiosAcende{0%{opacity:0}100%{opacity:.9}}
+  /* confete (reaproveita o .confete que já cai) */
 </style>
 </head>
 <body>
@@ -684,7 +713,7 @@ const ANIM_ESCOLHA = {};
 const GLOW = {seguir: "#38e8ff", compartilhar: "#7ee787", heart: "#ff7aa2", presente: "#ffd84d"};
 function animDe(grupo) {
   const a = ANIM_ESCOLHA[grupo] || (ANIM_LIGADO ? ANIM_PADRAO[grupo] : null) || "cartao";
-  return ["foguete", "coracoes", "portal", "ondas", "cartao"].includes(a) ? a : "cartao";
+  return ["foguete", "coracoes", "portal", "ondas", "fogos", "caixa", "impacto", "estrela", "confete", "chamas", "trofeu", "cartao"].includes(a) ? a : "cartao";
 }
 let ultimoAlerta = null, filaAlertas = [], mostrando = false;
 function textoAlerta(a) {
@@ -728,29 +757,61 @@ function proximoAlerta() {
   setTimeout(proximoAlerta, dur);
 }
 function desenharAnimacao(a, grupo, anim, dur) {
-  const glow = GLOW[grupo] || "#ffd84d";
+  const glow = GLOW[grupo] || "#ffd84d", rnd = (lo, hi) => lo + Math.random() * (hi - lo);
   const foto = a.foto
     ? `<img class="rev-foto" src="${esc(a.foto)}" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=\'rev-foto rev-emo\'>${a.emo}</div>'">`
     : `<div class="rev-foto rev-emo">${a.emo}</div>`;
   const reveal = `<div class="rev"><div class="rev-anel">${foto}</div><div class="rev-nome">${esc(a.quem)}</div><div class="rev-oque">${esc(a.oque)}</div></div>`;
+  const ATRASO = {foguete: 1.15, coracoes: .6, portal: 1.15, ondas: 1.1, fogos: 1.0, caixa: 1.1, impacto: 0, estrela: 1.0, confete: .5, chamas: 1.0, trofeu: 1.1};
+  const atr = ATRASO[anim] != null ? ATRASO[anim] : 1.0;
   let intro = "";
   if (anim === "foguete") intro = `<div class="fog">🚀</div><div class="flash"></div>`;
-  else if (anim === "coracoes") intro = `<div class="flash" style="--flash-atraso:.1s"></div>`;
+  else if (anim === "coracoes") intro = `<div class="flash"></div>`;
   else if (anim === "portal") intro = `<div class="portal"></div>`;
   else if (anim === "ondas") intro = `<div class="mega">📣</div><div class="onda"></div><div class="onda" style="--o-atraso:.3s"></div><div class="onda" style="--o-atraso:.6s"></div>`;
-  raiz.innerHTML = `<div class="cena" id="al" style="--glow:${glow}">${intro}${reveal}</div>`;
+  else if (anim === "fogos") intro = `<div class="flash" style="--flash-atraso:.85s"></div>`;
+  else if (anim === "caixa") intro = `<div class="caixa-anim">🎁</div><div class="flash" style="--flash-atraso:.92s"></div>`;
+  else if (anim === "impacto") intro = `<div class="choque"></div>`;
+  else if (anim === "estrela") intro = `<div class="estrela">⭐</div><div class="flash"></div>`;
+  else if (anim === "trofeu") intro = `<div class="raios"></div><div class="trofeu">🏆</div>`;
+  const cls = anim === "impacto" ? "cena impacto" : "cena";
+  raiz.innerHTML = `<div class="${cls}" id="al" style="--glow:${glow};--rev-atraso:${atr}s;--flash-atraso:${Math.max(0, atr - .15)}s;--p-atraso:${Math.max(0, atr - .1)}s">${intro}${reveal}</div>`;
   const cena = document.getElementById("al");
-  // partículas da explosão (foguete) e corações
-  if (anim === "foguete") criarParticulas(cena, 26, [glow, "#fff", "#ff8a3d"], "part", 240, 1.05);
-  if (anim === "coracoes") {
+  if (anim === "foguete") criarParticulas(cena, 26, [glow, "#fff", "#ff8a3d"], "part", 240, atr - .1);
+  else if (anim === "coracoes") {
     for (let i = 0; i < 16; i++) {
-      const ang = Math.random() * 6.283, d = 120 + Math.random() * 160;
-      const c = document.createElement("div"); c.className = "cor"; c.textContent = i % 2 ? "💗" : "❤️";
+      const ang = rnd(0, 6.283), d = rnd(120, 280), c = document.createElement("div");
+      c.className = "cor"; c.textContent = i % 2 ? "💗" : "❤️";
       c.style.setProperty("--cx", Math.cos(ang) * d + "px"); c.style.setProperty("--cy", (Math.sin(ang) * d - 60) + "px");
-      c.style.setProperty("--c-atraso", (Math.random() * .5) + "s"); cena.appendChild(c);
+      c.style.setProperty("--c-atraso", rnd(0, .5) + "s"); cena.appendChild(c);
     }
-  }
-  setTimeout(() => { if (cena.isConnected) cena.querySelector(".rev").classList.add("saindo"); }, dur - 450);
+  } else if (anim === "fogos") {
+    const cores = ["#fe2c55", "#25f4ee", "#ffc83d", "#8a5cf6", "#3ddc84", "#fff"];
+    for (let b = 0; b < 5; b++) {
+      const bx = rnd(20, 80), by = rnd(16, 52), cor = cores[b % cores.length], at = b * .18;
+      for (let i = 0; i < 14; i++) {
+        const ang = i / 14 * 6.283, d = rnd(70, 135), el = document.createElement("div");
+        el.className = "fogo"; el.style.left = bx + "vw"; el.style.top = by + "vh";
+        el.style.setProperty("--dx", Math.cos(ang) * d + "px"); el.style.setProperty("--dy", Math.sin(ang) * d + "px");
+        el.style.setProperty("--f-atraso", at + "s"); el.style.background = cor; el.style.boxShadow = "0 0 .5rem " + cor; cena.appendChild(el);
+      }
+    }
+  } else if (anim === "caixa") criarParticulas(cena, 24, [glow, "#fff", "#ff6ba0"], "part", 220, .92);
+  else if (anim === "estrela") criarParticulas(cena, 20, ["#ffe98a", "#fff", glow], "part", 200, atr - .1);
+  else if (anim === "confete") {
+    const cores = ["#fe2c55", "#25f4ee", "#ffc83d", "#8a5cf6", "#3ddc84", "#fff"];
+    for (let i = 0; i < 60; i++) {
+      const c = document.createElement("span"); c.className = "confete";
+      c.style.left = Math.random() * 100 + "vw"; c.style.background = cores[i % cores.length];
+      c.style.animationDuration = (1.8 + Math.random() * 1.8) + "s"; c.style.animationDelay = rnd(0, .6) + "s"; cena.appendChild(c);
+    }
+  } else if (anim === "chamas") {
+    for (let i = 0; i < 14; i++) {
+      const f = document.createElement("div"); f.className = "chama"; f.textContent = "🔥";
+      f.style.left = rnd(8, 92) + "vw"; f.style.setProperty("--ch-atraso", rnd(0, .7) + "s"); f.style.fontSize = rnd(1.8, 3) + "rem"; cena.appendChild(f);
+    }
+  } else if (anim === "trofeu") criarParticulas(cena, 18, ["#ffd84d", "#fff"], "part", 180, atr - .1);
+  setTimeout(() => { if (cena.isConnected) { const r = cena.querySelector(".rev"); if (r) r.classList.add("saindo"); } }, dur - 450);
 }
 function criarParticulas(cont, n, cores, cls, raio, atraso) {
   for (let i = 0; i < n; i++) {
