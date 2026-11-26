@@ -1139,12 +1139,8 @@ function aplicarVisualDoPainel(v) {
   if (!v || typeof v !== "object") return false;
   const alvo = new URLSearchParams();
   // preserva tambem palco (encaixe na tela unica); no palco, a escala vem do tamanho da peca (k) e manda
-  const preservar = ["tipo", "porta", "teste", "palco"];
-  // A Meta do TikTok usa tipo=metas com quais=tiktok, mas o painel guarda o visual das Metas do XLiv (quais=curtidas,...).
-  // Sem isto, o visual do painel sobrescreveria o quais/carrossel e a Meta do TikTok viraria as Metas do XLiv.
-  if (P.get("quais") === "tiktok") preservar.push("quais", "tkrodar", "tktempo", "direcao");
-  preservar.forEach(k => { if (P.has(k)) alvo.set(k, P.get(k)); });
-  Object.entries(v).forEach(([k, val]) => { if (!preservar.includes(k)) alvo.set(k, String(val)); });
+  ["tipo", "porta", "teste", "palco"].forEach(k => { if (P.has(k)) alvo.set(k, P.get(k)); });
+  Object.entries(v).forEach(([k, val]) => { if (!["tipo", "porta", "teste", "palco"].includes(k)) alvo.set(k, String(val)); });
   if (P.get("palco") === "1" && P.has("escala")) alvo.set("escala", P.get("escala"));
   const norm = q => [...q.entries()].map(([k, x]) => k + "=" + x).sort().join("&");
   if (norm(alvo) === norm(P)) return false;
